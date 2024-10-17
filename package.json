@@ -6,13 +6,16 @@
     "dev": "concurrently \"next dev\" \"make-agent dev -p 3000\"",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "fmt": "prettier --write 'src/app/**/*.{js,jsx,ts,tsx}'"
   },
   "dependencies": {
+    "near-safe": "^0.6.2",
     "next": "14.2.15",
     "react": "^18",
     "react-dom": "^18",
-    "vercel-url": "^0.2.1"
+    "vercel-url": "^0.2.1",
+    "viem": "^2.21.28"
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -23,6 +26,7 @@
     "eslint-config-next": "14.2.15",
     "make-agent": "^0.0.17",
     "postcss": "^8",
+    "prettier": "^3.3.3",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
   }
