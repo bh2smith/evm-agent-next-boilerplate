@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "local": "next dev",
     "dev": "concurrently \"next dev\" \"make-agent dev -p 3000\"",
     "build": "next build",
     "start": "next start",
@@ -10,6 +11,8 @@
     "fmt": "prettier --write 'src/app/**/*.{js,jsx,ts,tsx}'"
   },
   "dependencies": {
+    "@scalar/api-reference": "^1.25.38",
+    "@scalar/nextjs-api-reference": "^0.4.96",
     "near-safe": "^0.6.2",
     "next": "14.2.15",
     "react": "^18",

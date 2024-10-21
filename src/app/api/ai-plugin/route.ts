@@ -1,3 +1,5 @@
+import type { ReferenceConfiguration } from "@scalar/api-reference";
+import { ApiReference } from "@scalar/nextjs-api-reference";
 import { NextResponse } from "next/server";
 import { DEPLOYMENT_URL } from "vercel-url";
 
@@ -19,7 +21,7 @@ let bitteDevJson: { url?: string } = { url: undefined };
 })();
 
 export async function GET() {
-  const pluginData = {
+  const pluginData: ReferenceConfiguration = {
     openapi: "3.0.0",
     info: {
       title: "EVM Agent Boilerplate",
@@ -261,5 +263,5 @@ export async function GET() {
     },
   };
 
-  return NextResponse.json(pluginData);
+  return NextResponse.json(ApiReference(pluginData));
 }
