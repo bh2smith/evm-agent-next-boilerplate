@@ -84,6 +84,23 @@ export async function GET() {
           },
         },
       },
+      "/api/tools/encode": {
+        get: {
+          tags: ["encode-call"],
+          summary: "Retrieves Contract ABI",
+          description: "Fetches contract ABI by chainId and ContractAddress",
+          operationId: "contract-abi",
+          parameters: [
+            { $ref: "#/components/parameters/functionName" },
+            { $ref: "#/components/parameters/abiFragment" },
+            { $ref: "#/components/parameters/callParams" },
+          ],
+          responses: {
+            "200": { $ref: "#/components/responses/MetaTransaction200" },
+            "400": { $ref: "#/components/responses/BadRequest400" },
+          },
+        },
+      },
       "/api/tools/weth/wrap": {
         get: {
           tags: ["wrap"],
@@ -148,6 +165,36 @@ export async function GET() {
             type: "number",
           },
           example: 1,
+        },
+        functionName: {
+          name: "functionName",
+          in: "query",
+          description: "Name of function to call on contract",
+          required: true,
+          schema: {
+            type: "string",
+          },
+          example: "someContractMethod",
+        },
+        abiFragment: {
+          name: "abiFragment",
+          in: "query",
+          description: "Contract ABI Fragment for the functionName",
+          required: true,
+          schema: {
+            type: "object",
+          },
+          example: "someContractMethod",
+        },
+        callParams: {
+          name: "callParams",
+          in: "query",
+          description: "Arguments to pass to the function call",
+          required: true,
+          schema: {
+            type: "array",
+          },
+          example: "[1, 2]",
         },
       },
       responses: {
