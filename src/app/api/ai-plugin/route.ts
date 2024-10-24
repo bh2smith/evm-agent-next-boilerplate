@@ -34,7 +34,7 @@ export async function GET() {
     "x-mb": {
       "account-id": key.accountId,
       assistant: {
-        name: "Your Assistant",
+        name: "EVM Assistant",
         description: "An assistant that answers with EVM information",
         instructions:
           "Encodes transactions and signature requests on EVM networks.",
@@ -65,6 +65,22 @@ export async function GET() {
                 },
               },
             },
+          },
+        },
+      },
+      "/api/tools/contract": {
+        get: {
+          tags: ["contract-abi"],
+          summary: "Retrieves Contract ABI",
+          description: "Fetches contract ABI by chainId and ContractAddress",
+          operationId: "contract-abi",
+          parameters: [
+            { $ref: "#/components/parameters/chainId" },
+            { $ref: "#/components/parameters/address" },
+          ],
+          responses: {
+            "200": { $ref: "#/components/responses/ContractAbi" },
+            "400": { $ref: "#/components/responses/BadRequest400" },
           },
         },
       },
@@ -113,6 +129,17 @@ export async function GET() {
           },
           example: 0.123,
         },
+        address: {
+          name: "address",
+          in: "query",
+          description:
+            "20 byte Ethereum address encoded as a hex with `0x` prefix.",
+          required: true,
+          schema: {
+            type: "string",
+          },
+          example: "0x6810e776880c02933d47db1b9fc05908e5386b96",
+        },
         chainId: {
           name: "chainId",
           in: "query",
@@ -131,6 +158,16 @@ export async function GET() {
             "application/json": {
               schema: {
                 $ref: "#/components/schemas/SignRequest",
+              },
+            },
+          },
+        },
+        ContractAbi: {
+          description: "Contract ABI for EVM Smart Contract",
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/Abi",
               },
             },
           },
@@ -252,6 +289,128 @@ export async function GET() {
             },
           },
           required: ["to", "data", "value"],
+        },
+        Abi: {
+          type: "array",
+          items: {
+            oneOf: [
+              { $ref: "#/components/schemas/Constructor" },
+              { $ref: "#/components/schemas/Event" },
+              { $ref: "#/components/schemas/Function" },
+              { $ref: "#/components/schemas/Receive" },
+            ],
+          },
+        },
+        Constructor: {
+          type: "object",
+          properties: {
+            inputs: {
+              type: "array",
+              items: { $ref: "#/components/schemas/Input" },
+            },
+            stateMutability: {
+              type: "string",
+              enum: ["nonpayable"],
+            },
+            type: {
+              type: "string",
+              enum: ["constructor"],
+            },
+          },
+          required: ["inputs", "stateMutability", "type"],
+        },
+        Event: {
+          type: "object",
+          properties: {
+            anonymous: {
+              type: "boolean",
+            },
+            inputs: {
+              type: "array",
+              items: { $ref: "#/components/schemas/Input" },
+            },
+            name: {
+              type: "string",
+            },
+            type: {
+              type: "string",
+              enum: ["event"],
+            },
+          },
+          required: ["anonymous", "inputs", "name", "type"],
+        },
+        Function: {
+          type: "object",
+          properties: {
+            inputs: {
+              type: "array",
+              items: { $ref: "#/components/schemas/Input" },
+            },
+            name: {
+              type: "string",
+            },
+            outputs: {
+              type: "array",
+              items: { $ref: "#/components/schemas/Output" },
+            },
+            stateMutability: {
+              type: "string",
+              enum: ["nonpayable", "payable", "view", "pure"],
+            },
+            type: {
+              type: "string",
+              enum: ["function"],
+            },
+          },
+          required: ["inputs", "name", "outputs", "stateMutability", "type"],
+        },
+        Receive: {
+          type: "object",
+          properties: {
+            stateMutability: {
+              type: "string",
+              enum: ["payable"],
+            },
+            type: {
+              type: "string",
+              enum: ["receive"],
+            },
+          },
+          required: ["stateMutability", "type"],
+        },
+        Input: {
+          type: "object",
+          properties: {
+            internalType: {
+              type: "string",
+            },
+            name: {
+              type: "string",
+            },
+            type: {
+              type: "string",
+            },
+            indexed: {
+              type: "boolean",
+              nullable: true,
+            },
+          },
+          required: ["internalType", "name", "type"],
+        },
+        Output: {
+          type: "object",
+          properties: {
+            internalType: {
+              type: "string",
+            },
+            name: {
+              type: "string",
+            },
+            type: {
+              type: "string",
+            },
+          },
+          required: ["internalType", "name", "type"],
         },
       },
     },
