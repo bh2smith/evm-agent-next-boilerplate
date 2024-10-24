@@ -1,4 +1,4 @@
-import { Abi, Address, Chain, isAddress } from "viem";
+import { Abi, Address, Chain } from "viem";
 
 import * as chains from "viem/chains";
 
@@ -40,7 +40,6 @@ export class MultiScan {
     chainId: number,
     contractAddress: Address,
   ): Promise<Abi | null> {
-    console.log("Request:", chainId, isAddress(contractAddress, {strict: false}))
     try {
       const url = this.scanUrl(chainId, contractAddress);
       const response = await fetch(url);

@@ -132,7 +132,8 @@ export async function GET() {
         address: {
           name: "address",
           in: "query",
-          description: "20 byte Ethereum address encoded as a hex with `0x` prefix.",
+          description:
+            "20 byte Ethereum address encoded as a hex with `0x` prefix.",
           required: true,
           schema: {
             type: "string",
