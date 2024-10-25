@@ -108,7 +108,7 @@ export interface QuoteRequestBody {
   chainId: number;
 }
 
-interface ParsedQuoteRequest {
+export interface ParsedQuoteRequest {
   quoteRequest: OrderQuoteRequest;
   chainId: number;
 }

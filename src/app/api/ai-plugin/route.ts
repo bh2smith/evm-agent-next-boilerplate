@@ -163,16 +163,7 @@ export async function GET() {
             },
           },
           responses: {
-            "200": {
-              description: "Quoted order.",
-              content: {
-                "application/json": {
-                  schema: {
-                    $ref: "#/components/responses/MetaTransaction200",
-                  },
-                },
-              },
-            },
+            "200": { $ref: "#/components/responses/MetaTransaction200" },
             "400": {
               description: "Error quoting order.",
               content: {
