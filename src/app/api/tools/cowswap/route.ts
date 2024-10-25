@@ -1,6 +1,8 @@
 import { parseQuoteRequest } from "@/src/app/api/tools/cowswap/utils";
 import { OrderBookApi, SigningScheme } from "@cowprotocol/cow-sdk";
 import { type NextRequest, NextResponse } from "next/server";
+import { encodeFunctionData, Hex, parseAbi } from "viem";
+import { signRequestFor } from "../weth/utils";
 
 // Refer to https://api.cow.fi/docs/#/ for Specifics on Quoting and Order posting.
 
@@ -22,14 +24,26 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       signature: "0x",
       signingScheme: SigningScheme.PRESIGN,
     });
-    
+
     console.log("Order Posted", orderUid);
-    // TODO: Transform Quote into SignRequest: 
-    // Encode setPresignature: https://etherscan.io/address/0x9008D19f58AAbD9eD0D60971565AA8510560ab41#code
+
+    // Encode setPresignature:
+    const result = signRequestFor({
+      chainId: parsedRequest.chainId,
+      to: "0x9008D19f58AAbD9eD0D60971565AA8510560ab41",
+      value: "0x0",
+      data: encodeFunctionData({
+        abi: parseAbi([
+          "function setPreSignature(bytes calldata orderUid, bool signed) external",
+        ]),
+        functionName: "setPreSignature",
+        args: [orderUid as Hex, true],
+      }),
+    });
 
     // TODO: Update Return Schema (OrderQuote, SignRequest).
 
-    return NextResponse.json(quoteResponse);
+    return NextResponse.json(result);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.error(message);

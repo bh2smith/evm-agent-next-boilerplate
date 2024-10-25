@@ -168,7 +168,7 @@ export async function GET() {
               content: {
                 "application/json": {
                   schema: {
-                    $ref: "#/components/schemas/OrderQuoteResponse",
+                    $ref: "#/components/responses/MetaTransaction200",
                   },
                 },
               },
