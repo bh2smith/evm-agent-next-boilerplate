@@ -11,6 +11,7 @@
     "test": "jest --config jest.config.ts"
   },
   "dependencies": {
+    "@cowprotocol/cow-sdk": "^5.7.0-RC.0",
     "near-safe": "^0.7.6",
     "next": "15.0.1",
     "react": "19.0.0-rc-69d4b800-20241021",

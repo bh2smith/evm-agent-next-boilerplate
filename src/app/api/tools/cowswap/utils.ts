@@ -3,6 +3,10 @@ import csv from "csv-parser";
 import { Address, erc20Abi, getAddress, isAddress, parseUnits } from "viem";
 import { Network, setupAdapter } from "near-ca";
 import { NextRequest } from "next/server";
+import {
+  OrderQuoteRequest,
+  OrderQuoteSideKindSell,
+} from "@cowprotocol/cow-sdk";
 
 interface TokenInfo {
   address: Address;
@@ -10,7 +14,13 @@ interface TokenInfo {
 }
 
 type SymbolMapping = Record<string, TokenInfo>;
-type BlockchainMapping = Record<string, SymbolMapping>;
+type BlockchainMapping = Record<number, SymbolMapping>;
+
+const DuneNetworkMap: { [key: string]: number } = {
+  ethereum: 1,
+  gnosis: 100,
+  arbitrum: 42161,
+};
 
 export async function loadTokenMapping(
   filePath: string,
@@ -22,14 +32,14 @@ export async function loadTokenMapping(
       .pipe(csv())
       .on("data", (row) => {
         const { blockchain, address, symbol, decimals } = row;
-
+        const chainId = DuneNetworkMap[blockchain];
         // Ensure blockchain key exists in the mapping
-        if (!mapping[blockchain]) {
-          mapping[blockchain] = {};
+        if (!mapping[chainId]) {
+          mapping[chainId] = {};
         }
 
         // Map symbol to address and decimals
-        mapping[blockchain][symbol] = {
+        mapping[chainId][symbol] = {
           address,
           decimals: parseInt(decimals, 10),
         };
@@ -45,28 +55,17 @@ export async function loadTokenMapping(
   });
 }
 
-export type CowNetwork = "mainnet" | "xdai" | "arbitrum_one";
-
 // type DuneNetwork = "ethereum" | "gnosis" | "arbitrum";
 let tokenMap: BlockchainMapping;
 
-const chainIdFromNetwork: Record<CowNetwork, number> = {
-  mainnet: 1,
-  xdai: 100,
-  arbitrum_one: 42161,
-};
-
 export async function getTokenDetails(
-  network: CowNetwork,
+  chainId: number,
   symbolOrAddress: string,
 ): Promise<TokenInfo> {
   if (isAddress(symbolOrAddress)) {
     return {
       address: symbolOrAddress as Address,
-      decimals: await getTokenDecimals(
-        chainIdFromNetwork[network],
-        symbolOrAddress,
-      ),
+      decimals: await getTokenDecimals(chainId, symbolOrAddress),
     };
   }
   console.log("Seeking TokenMap for Symbol -> Address conversion");
@@ -77,7 +76,7 @@ export async function getTokenDetails(
     // half-ass attempt to load to memory.
     tokenMap = await loadTokenMapping("./tokenlist.csv");
   }
-  return tokenMap[network][symbolOrAddress];
+  return tokenMap[chainId][symbolOrAddress];
 }
 
 // Function to request token decimals
@@ -106,28 +105,26 @@ export interface QuoteRequestBody {
   kind: "buy" | "sell";
   receiver: Address;
   from: Address;
-  // network is not officially part of the COW API expectations
-  network: CowNetwork;
+  chainId: number;
+}
+
+interface ParsedQuoteRequest {
+  quoteRequest: OrderQuoteRequest;
+  chainId: number;
 }
 
 export async function parseQuoteRequest(
   req: NextRequest,
-): Promise<QuoteRequestBody> {
+): Promise<ParsedQuoteRequest> {
   // TODO - Add Type Guard on Request (to determine better if it needs processing below.)
   const requestBody = await req.json();
 
-  const { sellToken, buyToken, network, sellAmountBeforeFee, from } =
+  const { sellToken, buyToken, chainId, sellAmountBeforeFee, from } =
     requestBody;
 
-  if (!["mainnet", "xdai", "arbitrum_one"].includes(network)) {
-    throw new Error(
-      `Invalid network '${network}'. Must be one of 'mainnet', 'xdai' OR 'arbitrum_one'`,
-    );
-  }
-
   const [buyTokenData, sellTokenData] = await Promise.all([
-    getTokenDetails(network, buyToken),
-    getTokenDetails(network, sellToken),
+    getTokenDetails(chainId, buyToken),
+    getTokenDetails(chainId, sellToken),
   ]);
 
   let sender = from;
@@ -141,16 +138,18 @@ export async function parseQuoteRequest(
   }
 
   return {
-    sellToken: sellTokenData.address,
-    buyToken: buyTokenData.address,
-    sellAmountBeforeFee: parseUnits(
-      sellAmountBeforeFee,
-      sellTokenData.decimals,
-    ).toString(),
-    kind: "sell",
-    // TODO - change this when we want to enable alternate recipients.
-    receiver: sender,
-    from: sender,
-    network: requestBody.network,
+    chainId,
+    quoteRequest: {
+      sellToken: sellTokenData.address,
+      buyToken: buyTokenData.address,
+      sellAmountBeforeFee: parseUnits(
+        sellAmountBeforeFee,
+        sellTokenData.decimals,
+      ).toString(),
+      kind: OrderQuoteSideKindSell.SELL,
+      // TODO - change this when we want to enable alternate recipients.
+      receiver: sender,
+      from: sender,
+    },
   };
 }

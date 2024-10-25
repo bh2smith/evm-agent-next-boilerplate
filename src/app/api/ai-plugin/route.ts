@@ -95,13 +95,13 @@ export async function GET() {
           parameters: [
             {
               in: "query",
-              name: "network",
+              name: "chainId",
               required: true,
               schema: {
-                type: "string",
+                type: "number",
               },
               description:
-                "The network on which the order is to be placed (e.g., 'mainnet').",
+                "The network on which the order is to be placed (see cow supported networks here: https://github.com/cowprotocol/cow-sdk/blob/d30a891353805ac3e19c22e75ab39dcdc035d5f0/src/common/chains.ts#L5-L10).",
             },
             {
               in: "query",

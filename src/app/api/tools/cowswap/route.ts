@@ -1,42 +1,38 @@
 import { parseQuoteRequest } from "@/src/app/api/tools/cowswap/utils";
+import { OrderBookApi, SigningScheme } from "@cowprotocol/cow-sdk";
 import { type NextRequest, NextResponse } from "next/server";
 
-const COW_API = "https://api.cow.fi";
+// Refer to https://api.cow.fi/docs/#/ for Specifics on Quoting and Order posting.
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
-    const requestBody = await parseQuoteRequest(req);
-    console.log("POST Request for quote:", requestBody);
+    const parsedRequest = await parseQuoteRequest(req);
+    console.log("POST Request for quote:", parsedRequest);
+    const orderbook = new OrderBookApi({ chainId: parsedRequest.chainId });
+    // We manually add PRESIGN (sinfe this is a safe);
+    const quoteResponse = await orderbook.getQuote({
+      ...parsedRequest.quoteRequest,
+      signingScheme: SigningScheme.PRESIGN,
+    });
+    console.log("Received Quote", quoteResponse);
 
-    const response = await fetch(
-      `${COW_API}/${requestBody.network}/api/v1/quote`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody),
-      },
-    );
-
-
+    // Post Unsigned Order to Orderbook (this might be spam if the user doesn't sign)
+    const orderUid = await orderbook.sendOrder({
+      ...quoteResponse.quote,
+      signature: "0x",
+      signingScheme: SigningScheme.PRESIGN,
+    });
     
-    if (!response.ok) {
-      const message = await response.text();
-      return NextResponse.json({ message }, { status: response.status });
-    }
-    // TODO: Maybe cow-sdk exports types for this:
-    //  https://github.com/cowprotocol/cow-sdk
-    const quote = await response.json();
-
-    // TODO: Post Unsigned Quote to Orderbook.
-
-    // TODO: Transform Quote into SignRequest
+    console.log("Order Posted", orderUid);
+    // TODO: Transform Quote into SignRequest: 
+    // Encode setPresignature: https://etherscan.io/address/0x9008D19f58AAbD9eD0D60971565AA8510560ab41#code
 
     // TODO: Update Return Schema (OrderQuote, SignRequest).
 
-    return NextResponse.json(quote);
+    return NextResponse.json(quoteResponse);
   } catch (error: unknown) {
-    const message = error instanceof Error? error.message: String(error)
-    console.error(message)
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(message);
     return NextResponse.json({ error }, { status: 400 });
   }
 }
