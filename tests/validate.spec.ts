@@ -11,7 +11,7 @@ describe("field validation", () => {
     expect(input).toStrictEqual({
       chainId: 123,
       amount: 0.45,
-      address: zeroAddress,
+      token: zeroAddress,
       recipient: zeroAddress,
     });
   });
@@ -39,7 +39,7 @@ describe("field validation", () => {
     expect(input).toStrictEqual({
       chainId: 11155111,
       amount: 0.069,
-      address: "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14",
+      token: "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14",
       recipient: "0xDcf56F5a8Cc380f63b6396Dbddd0aE9fa605BeeE",
     });
   });
