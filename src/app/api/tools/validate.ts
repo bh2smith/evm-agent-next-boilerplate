@@ -1,26 +1,21 @@
 import { Address, getAddress } from "viem";
 
-function exists(param: string | null, name: string): string {
-  if (!param) {
-    throw new Error(`Missing required field: ${name}`);
-  }
-  return param;
-}
-
-function parseField<T>(
-  param: string | null,
-  name: string,
-  parser: (value: string) => T,
-  errorMessage: string,
+export type FieldParser<T> = Record<keyof T, FieldValidator<T[keyof T]>>;
+export function validateInput<T>(
+  params: URLSearchParams,
+  validatorMapping: FieldParser<T>,
 ): T {
-  const value = exists(param, name);
-  try {
-    return parser(value);
-  } catch {
-    throw new Error(`${errorMessage} ${name}: ${value}`);
-  }
+  const fields = createFields<T>(validatorMapping);
+  return Object.fromEntries(
+    Object.entries(fields).map(([key, value]) => {
+      const { paramName, validator } = value as {
+        paramName: string;
+        validator: FieldValidator<T[keyof T]>;
+      };
+      return [key, validator(params.get(paramName), paramName)];
+    }),
+  ) as T;
 }
-
 export function addressField(param: string | null, name: string): Address {
   return parseField(param, name, getAddress, "Invalid Address field");
 }
@@ -41,26 +36,9 @@ export function floatField(param: string | null, name: string): number {
   return value;
 }
 
-export type FieldValidator<T> = (param: string | null, name: string) => T;
-export type FieldParser<T> = Record<keyof T, FieldValidator<T[keyof T]>>;
+type FieldValidator<T> = (param: string | null, name: string) => T;
 
-export function validateInput<T>(
-  params: URLSearchParams,
-  validatorMapping: FieldParser<T>,
-): T {
-  const fields = createFields<T>(validatorMapping);
-  return Object.fromEntries(
-    Object.entries(fields).map(([key, value]) => {
-      const { paramName, validator } = value as {
-        paramName: string;
-        validator: FieldValidator<T[keyof T]>;
-      };
-      return [key, validator(params.get(paramName), paramName)];
-    }),
-  ) as T;
-}
-
-export function createFields<T>(
+function createFields<T>(
   validatorMapping: Record<keyof T, FieldValidator<unknown>>,
 ): Record<keyof T, { paramName: string; validator: FieldValidator<unknown> }> {
   return Object.fromEntries(
@@ -72,4 +50,25 @@ export function createFields<T>(
     keyof T,
     { paramName: string; validator: FieldValidator<unknown> }
   >;
+}
+
+function exists(param: string | null, name: string): string {
+  if (!param) {
+    throw new Error(`Missing required field: ${name}`);
+  }
+  return param;
+}
+
+function parseField<T>(
+  param: string | null,
+  name: string,
+  parser: (value: string) => T,
+  errorMessage: string,
+): T {
+  const value = exists(param, name);
+  try {
+    return parser(value);
+  } catch {
+    throw new Error(`${errorMessage} ${name}: ${value}`);
+  }
 }
