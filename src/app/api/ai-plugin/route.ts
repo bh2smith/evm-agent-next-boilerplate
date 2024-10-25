@@ -84,6 +84,24 @@ export async function GET() {
           },
         },
       },
+      "/api/tools/erc20": {
+        get: {
+          tags: ["erc20"],
+          summary: "Encodes ERC20 (Fungible) Token Transfer",
+          description: "Encodes ERC20 transfer transaction as MetaTransaction",
+          operationId: "erc20-transfer",
+          parameters: [
+            { $ref: "#/components/parameters/chainId" },
+            { $ref: "#/components/parameters/amount" },
+            { $ref: "#/components/parameters/recipient" },
+            { $ref: "#/components/parameters/token" },
+          ],
+          responses: {
+            "200": { $ref: "#/components/responses/MetaTransaction200" },
+            "400": { $ref: "#/components/responses/BadRequest400" },
+          },
+        },
+      },
       "/api/tools/weth/wrap": {
         get: {
           tags: ["wrap"],
@@ -122,7 +140,7 @@ export async function GET() {
         amount: {
           name: "amount",
           in: "query",
-          description: "amount to wrap in Ether Units",
+          description: "amount in Units",
           required: true,
           schema: {
             type: "number",
@@ -131,6 +149,28 @@ export async function GET() {
         },
         address: {
           name: "address",
+          in: "query",
+          description:
+            "20 byte Ethereum address encoded as a hex with `0x` prefix.",
+          required: true,
+          schema: {
+            type: "string",
+          },
+          example: "0x6810e776880c02933d47db1b9fc05908e5386b96",
+        },
+        recipient: {
+          name: "recipient",
+          in: "query",
+          description:
+            "20 byte Ethereum address encoded as a hex with `0x` prefix.",
+          required: true,
+          schema: {
+            type: "string",
+          },
+          example: "0x6810e776880c02933d47db1b9fc05908e5386b96",
+        },
+        token: {
+          name: "token",
           in: "query",
           description:
             "20 byte Ethereum address encoded as a hex with `0x` prefix.",

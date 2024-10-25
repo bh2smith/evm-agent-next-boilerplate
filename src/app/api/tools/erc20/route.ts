@@ -15,14 +15,14 @@ import {
 export interface Input {
   chainId: number;
   amount: number;
-  address: Address;
+  token: Address;
   recipient: Address;
 }
 
 export const parsers: FieldParser<Input> = {
   chainId: numberField,
   amount: floatField,
-  address: addressField,
+  token: addressField,
   recipient: addressField,
 };
 
@@ -30,18 +30,18 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const search = req.nextUrl.searchParams;
   console.log("erc20/", search);
   try {
-    const { chainId, amount, address, recipient } = validateInput<Input>(
+    const { chainId, amount, token, recipient } = validateInput<Input>(
       search,
       parsers,
     );
     const decimals = await readContract(Network.fromChainId(chainId).client, {
-      address: getAddress(address),
+      address: token,
       functionName: "decimals",
       abi: erc20Abi,
     });
     const signRequest = signRequestFor({
       chainId,
-      to: address,
+      to: token,
       value: "0x",
       data: encodeFunctionData({
         abi: erc20Abi,
