@@ -8,13 +8,16 @@ export async function orderRequestFlow({
   chainId,
   quoteRequest,
 }: ParsedQuoteRequest): Promise<SignRequestData> {
+  console.log(`Aquiring to cow orderbook for chainId ${chainId}`);
   const orderbook = new OrderBookApi({ chainId });
-  // We manually add PRESIGN (since this is a safe);
-  const quoteResponse = await orderbook.getQuote({
+  const adaptedQuoteRequest = {
     ...quoteRequest,
     signingScheme: SigningScheme.PRESIGN,
-  });
-  console.log("Received Quote", quoteResponse);
+  };
+  console.log(`Requesting quote for ${JSON.stringify(adaptedQuoteRequest, null, 2)}`);
+  // We manually add PRESIGN (since this is a safe);
+  const quoteResponse = await orderbook.getQuote(adaptedQuoteRequest);
+  console.log("Received quote", quoteResponse);
 
   // Post Unsigned Order to Orderbook (this might be spam if the user doesn't sign)
   const order = {
@@ -24,6 +27,7 @@ export async function orderRequestFlow({
     quoteId: quoteResponse.id,
     // Add from to PRESIGN: {"errorType":"MissingFrom","description":"From address must be specified for on-chain signature"}%
     from: quoteRequest.from,
+    // TODO: Orders are expiring presumably because of this.
     // Override the Fee amount because of {"errorType":"NonZeroFee","description":"Fee must be zero"}%
     feeAmount: "0",
   };

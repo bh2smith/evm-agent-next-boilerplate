@@ -13,7 +13,7 @@ describe("CowSwap Plugin", () => {
       kind: OrderQuoteSideKindSell.SELL,
       sellAmountBeforeFee: "2000000000000000000",
     };
-
+    console.log("Requesting Quote...")
     const signRequest = await orderRequestFlow({ chainId, quoteRequest });
     console.log(signRequest);
     console.log(
