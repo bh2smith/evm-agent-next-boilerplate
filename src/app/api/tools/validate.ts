@@ -23,7 +23,7 @@ export function addressField(param: string | null, name: string): Address {
 export function numberField(param: string | null, name: string): number {
   const value = parseField(param, name, parseInt, "Invalid Float field");
   if (isNaN(value)) {
-    throw new Error(`Invalid Integer field ${name}: Not a number`);
+    throw new Error(`Invalid Integer field '${name}': Not a number`);
   }
   return value;
 }
@@ -31,7 +31,7 @@ export function numberField(param: string | null, name: string): number {
 export function floatField(param: string | null, name: string): number {
   const value = parseField(param, name, parseFloat, "Invalid Float parameter");
   if (isNaN(value)) {
-    throw new Error(`Invalid Float parameter ${name}: Not a number`);
+    throw new Error(`Invalid Float parameter '${name}': Not a number`);
   }
   return value;
 }
@@ -54,7 +54,7 @@ function createFields<T>(
 
 function exists(param: string | null, name: string): string {
   if (!param) {
-    throw new Error(`Missing required field: ${name}`);
+    throw new Error(`Missing required field: '${name}'`);
   }
   return param;
 }
@@ -69,6 +69,6 @@ function parseField<T>(
   try {
     return parser(value);
   } catch {
-    throw new Error(`${errorMessage} ${name}: ${value}`);
+    throw new Error(`${errorMessage} '${name}': ${value}`);
   }
 }

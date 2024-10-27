@@ -4,9 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"next dev --turbopack\" \"make-agent dev -p 3000\"",
-    "build": "next build",
+    "build:next": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "next lint && prettier --check '{src/app,tests}/**/*.{js,jsx,ts,tsx}'",
     "fmt": "prettier --write '{src/app,tests}/**/*.{js,jsx,ts,tsx}'",
     "test": "jest --testTimeout 30000"
   },
