@@ -14,7 +14,9 @@ export async function orderRequestFlow({
     ...quoteRequest,
     signingScheme: SigningScheme.PRESIGN,
   };
-  console.log(`Requesting quote for ${JSON.stringify(adaptedQuoteRequest, null, 2)}`);
+  console.log(
+    `Requesting quote for ${JSON.stringify(adaptedQuoteRequest, null, 2)}`,
+  );
   // We manually add PRESIGN (since this is a safe);
   const quoteResponse = await orderbook.getQuote(adaptedQuoteRequest);
   console.log("Received quote", quoteResponse);
