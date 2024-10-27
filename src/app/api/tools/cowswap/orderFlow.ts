@@ -1,61 +1,49 @@
 import { SignRequestData } from "near-safe";
-import { ParsedQuoteRequest, sellTokenApprovalTx } from "./utils";
+import {
+  createOrder,
+  isNativeAsset,
+  ParsedQuoteRequest,
+  sellTokenApprovalTx,
+  setPresignatureTx,
+} from "./utils";
 import { OrderBookApi, SigningScheme } from "@cowprotocol/cow-sdk";
 import { signRequestFor } from "../weth/utils";
-import { encodeFunctionData, Hex, parseAbi } from "viem";
 
 export async function orderRequestFlow({
   chainId,
   quoteRequest,
 }: ParsedQuoteRequest): Promise<SignRequestData> {
-  console.log(`Aquiring to cow orderbook for chainId ${chainId}`);
+  if (isNativeAsset(quoteRequest.sellToken)) {
+    // TODO: Integrate EthFlow
+    throw new Error(
+      `This agent does not currently support Native Asset Sell Orders.`,
+    );
+  }
   const orderbook = new OrderBookApi({ chainId });
-  const adaptedQuoteRequest = {
-    ...quoteRequest,
-    signingScheme: SigningScheme.PRESIGN,
-  };
-  console.log(
-    `Requesting quote for ${JSON.stringify(adaptedQuoteRequest, null, 2)}`,
-  );
+  console.log(`Requesting quote for ${JSON.stringify(quoteRequest, null, 2)}`);
+
   // We manually add PRESIGN (since this is a safe);
-  const quoteResponse = await orderbook.getQuote(adaptedQuoteRequest);
+  quoteRequest.signingScheme = SigningScheme.PRESIGN;
+  const quoteResponse = await orderbook.getQuote(quoteRequest);
   console.log("Received quote", quoteResponse);
+
+  // Post Unsigned Order to Orderbook (this might be spam if the user doesn't sign)
+  const order = createOrder({ quoteResponse, quoteRequest });
+  const orderUid = await orderbook.sendOrder(order);
+  console.log("Order Posted", orderUid);
+
+  // User must approve the sellToken to trade.
   const approvalTx = await sellTokenApprovalTx({
     ...quoteRequest,
     chainId,
     sellAmount: quoteResponse.quote.sellAmount,
   });
-  // Post Unsigned Order to Orderbook (this might be spam if the user doesn't sign)
-  const order = {
-    ...quoteResponse.quote,
-    signature: "0x",
-    signingScheme: SigningScheme.PRESIGN,
-    quoteId: quoteResponse.id,
-    // Add from to PRESIGN: {"errorType":"MissingFrom","description":"From address must be specified for on-chain signature"}%
-    from: quoteRequest.from,
-    // TODO: Orders are expiring presumably because of this.
-    // Override the Fee amount because of {"errorType":"NonZeroFee","description":"Fee must be zero"}%
-    feeAmount: "0",
-  };
-  console.log("Built Order", order);
-
-  const orderUid = await orderbook.sendOrder(order);
-
-  console.log("Order Posted", orderUid);
-  const preSignatureTx = {
-    to: "0x9008D19f58AAbD9eD0D60971565AA8510560ab41",
-    value: "0x0",
-    data: encodeFunctionData({
-      abi: parseAbi([
-        "function setPreSignature(bytes calldata orderUid, bool signed) external",
-      ]),
-      functionName: "setPreSignature",
-      args: [orderUid as Hex, true],
-    }),
-  };
-  // Encode setPresignature:
   return signRequestFor({
     chainId,
-    metaTransactions: [...(approvalTx ? [approvalTx] : []), preSignatureTx],
+    metaTransactions: [
+      ...(approvalTx ? [approvalTx] : []),
+      // Encode setPresignature (this is onchain confirmation of order signature.)
+      setPresignatureTx(orderUid),
+    ],
   });
 }

@@ -6,6 +6,7 @@ import {
   erc20Abi,
   getAddress,
   isAddress,
+  isHex,
   parseAbi,
   parseUnits,
 } from "viem";
@@ -13,13 +14,19 @@ import { Network, setupAdapter } from "near-ca";
 import { NextRequest } from "next/server";
 import {
   OrderQuoteRequest,
+  OrderQuoteResponse,
   OrderQuoteSideKindSell,
+  SigningScheme,
 } from "@cowprotocol/cow-sdk";
 import { MetaTransaction } from "near-safe";
 
 const MAX_APPROVAL = BigInt(
   "115792089237316195423570985008687907853269984665640564039457584007913129639935",
 );
+
+// CoW (and many other Dex Protocols use this to represent native asset).
+const NATIVE_ASSET = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+const GPV2SettlementContract = "0x9008D19f58AAbD9eD0D60971565AA8510560ab41";
 interface TokenInfo {
   address: Address;
   decimals: number;
@@ -166,6 +173,23 @@ export async function parseQuoteRequest(
   };
 }
 
+export function setPresignatureTx(orderUid: string): MetaTransaction {
+  if (!isHex(orderUid)) {
+    throw new Error(`Invalid OrderUid (not hex) ${orderUid}`);
+  }
+  return {
+    to: GPV2SettlementContract,
+    value: "0x0",
+    data: encodeFunctionData({
+      abi: parseAbi([
+        "function setPreSignature(bytes calldata orderUid, bool signed) external",
+      ]),
+      functionName: "setPreSignature",
+      args: [orderUid, true],
+    }),
+  };
+}
+
 export async function sellTokenApprovalTx(args: {
   from: string;
   sellToken: string;
@@ -220,4 +244,27 @@ async function checkAllowance(
     functionName: "allowance",
     args: [owner, spender],
   });
+}
+
+export function isNativeAsset(token: string): boolean {
+  return token.toLowerCase() === NATIVE_ASSET.toLowerCase();
+}
+
+export function createOrder(args: {
+  quoteResponse: OrderQuoteResponse;
+  quoteRequest: OrderQuoteRequest;
+}) {
+  const order = {
+    ...args.quoteResponse.quote,
+    signature: "0x",
+    signingScheme: SigningScheme.PRESIGN,
+    quoteId: args.quoteResponse.id,
+    // Add from to PRESIGN: {"errorType":"MissingFrom","description":"From address must be specified for on-chain signature"}%
+    from: args.quoteRequest.from,
+    // TODO: Orders are expiring presumably because of this.
+    // Override the Fee amount because of {"errorType":"NonZeroFee","description":"Fee must be zero"}%
+    feeAmount: "0",
+  };
+  console.log("Built Order", order);
+  return order;
 }
