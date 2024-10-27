@@ -1,46 +1,59 @@
-import { validateInput } from "@/src/app/api/tools/validate";
-import { zeroAddress } from "viem";
-import { Input, parsers } from "@/src/app/api/tools/erc20/route";
+import {
+  addressField,
+  FieldParser,
+  floatField,
+  numberField,
+  validateInput,
+} from "@/src/app/api/tools/validate";
+import { Address, zeroAddress } from "viem";
+
+interface Input {
+  int: number;
+  float: number;
+  address: Address;
+}
+
+const parsers: FieldParser<Input> = {
+  int: numberField,
+  float: floatField,
+  address: addressField,
+};
 
 describe("field validation", () => {
   it("ERC20 Input success", async () => {
     const search = new URLSearchParams(
-      `chainId=123&amount=0.45&token=${zeroAddress}&recipient=${zeroAddress}`,
+      `int=123&float=0.45&address=${zeroAddress}`,
     );
     const input = validateInput<Input>(search, parsers);
     expect(input).toStrictEqual({
-      chainId: 123,
-      amount: 0.45,
-      token: zeroAddress,
-      recipient: zeroAddress,
+      int: 123,
+      float: 0.45,
+      address: zeroAddress,
     });
   });
   it("ERC20 Input fail", async () => {
-    const search = new URLSearchParams(
-      `amount=0.45&token=${zeroAddress}&recipient=${zeroAddress}`,
-    );
+    const search = new URLSearchParams(`float=0.45&address=${zeroAddress}`);
     expect(() => validateInput<Input>(search, parsers)).toThrow(
-      "Missing required field: chainId",
+      "Missing required field: 'int'",
     );
-    search.set("chainId", "poop");
+    search.set("int", "poop");
     expect(() => validateInput<Input>(search, parsers)).toThrow(
-      "Invalid Integer field chainId: Not a number",
+      "Invalid Integer field 'int': Not a number",
     );
-    search.set("chainId", "1");
-    search.set("recipient", "0x12");
+    search.set("int", "1");
+    search.set("address", "0x12");
     expect(() => validateInput<Input>(search, parsers)).toThrow(
-      "Invalid Address field recipient: 0x12",
+      "Invalid Address field 'address': 0x12",
     );
 
     const search2 = new URLSearchParams(
-      "chainId=11155111&amount=0.069&recipient=0xDcf56F5a8Cc380f63b6396Dbddd0aE9fa605BeeE&token=0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14",
+      "int=11155111&float=0.069&address=0xDcf56F5a8Cc380f63b6396Dbddd0aE9fa605BeeE",
     );
     const input = validateInput<Input>(search2, parsers);
     expect(input).toStrictEqual({
-      chainId: 11155111,
-      amount: 0.069,
-      token: "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14",
-      recipient: "0xDcf56F5a8Cc380f63b6396Dbddd0aE9fa605BeeE",
+      int: 11155111,
+      float: 0.069,
+      address: "0xDcf56F5a8Cc380f63b6396Dbddd0aE9fa605BeeE",
     });
   });
 });

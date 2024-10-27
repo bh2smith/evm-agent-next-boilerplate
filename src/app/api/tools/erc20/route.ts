@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Address, encodeFunctionData, erc20Abi, getAddress } from "viem";
+import { Address, encodeFunctionData, erc20Abi } from "viem";
 import { signRequestFor } from "../weth/utils";
 import { readContract } from "viem/actions";
 import { Network } from "near-ca";
@@ -12,14 +12,15 @@ import {
   validateInput,
 } from "../validate";
 
-export interface Input {
+// Declare Route Input
+interface Input {
   chainId: number;
   amount: number;
   token: Address;
   recipient: Address;
 }
 
-export const parsers: FieldParser<Input> = {
+const parsers: FieldParser<Input> = {
   chainId: numberField,
   amount: floatField,
   token: addressField,
