@@ -21,14 +21,13 @@ export async function orderRequestFlow({
   }
   const orderbook = new OrderBookApi({ chainId });
   console.log(`Requesting quote for ${JSON.stringify(quoteRequest, null, 2)}`);
-
-  // We manually add PRESIGN (since this is a safe);
-  quoteRequest.signingScheme = SigningScheme.PRESIGN;
   const quoteResponse = await orderbook.getQuote(quoteRequest);
   console.log("Received quote", quoteResponse);
 
   // Post Unsigned Order to Orderbook (this might be spam if the user doesn't sign)
-  const order = createOrder({ quoteResponse, quoteRequest });
+  const order = createOrder(quoteResponse);
+  console.log("Built Order", order);
+
   const orderUid = await orderbook.sendOrder(order);
   console.log("Order Posted", orderUid);
 

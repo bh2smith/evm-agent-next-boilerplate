@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseEther, toHex } from "viem";
-import { signRequestFor, validateWethInput } from "../utils";
+import { validateWethInput } from "../utils";
+import { signRequestFor } from "../../util";
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const search = req.nextUrl.searchParams;

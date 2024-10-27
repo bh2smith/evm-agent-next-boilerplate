@@ -10,6 +10,7 @@ import {
 import { Network, setupAdapter } from "near-ca";
 import { NextRequest } from "next/server";
 import {
+  OrderCreation,
   OrderQuoteRequest,
   OrderQuoteResponse,
   OrderQuoteSideKindSell,
@@ -23,7 +24,7 @@ const MAX_APPROVAL = BigInt(
 );
 
 // CoW (and many other Dex Protocols use this to represent native asset).
-const NATIVE_ASSET = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+export const NATIVE_ASSET = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 const GPV2SettlementContract = "0x9008D19f58AAbD9eD0D60971565AA8510560ab41";
 const GPv2VaultRelayer = "0xC92E8bdf79f0507f65a392b0ab4667716BFE0110";
 
@@ -47,7 +48,7 @@ export async function parseQuoteRequest(
 ): Promise<ParsedQuoteRequest> {
   // TODO - Add Type Guard on Request (to determine better if it needs processing below.)
   const requestBody = await req.json();
-
+  // TODO: Validate input with new validation tools:
   const { sellToken, buyToken, chainId, sellAmountBeforeFee, from } =
     requestBody;
 
@@ -79,13 +80,15 @@ export async function parseQuoteRequest(
       // TODO - change this when we want to enable alternate recipients.
       receiver: sender,
       from: sender,
+      // manually add PRESIGN (since this is a safe);
+      signingScheme: SigningScheme.PRESIGN,
     },
   };
 }
 
 export function setPresignatureTx(orderUid: string): MetaTransaction {
   if (!isHex(orderUid)) {
-    throw new Error(`Invalid OrderUid (not hex) ${orderUid}`);
+    throw new Error(`Invalid OrderUid (not hex): ${orderUid}`);
   }
   return {
     to: GPV2SettlementContract,
@@ -115,15 +118,9 @@ export async function sellTokenApprovalTx(args: {
     chainId,
   );
 
-  let approvalTransaction = null;
-
   if (allowance < BigInt(sellAmount)) {
-    console.log(
-      `Insufficient allowance. Required: ${sellAmount}, Approved: ${allowance}`,
-    );
-
-    // Step 2: Build an approval transaction
-    approvalTransaction = {
+    // Insufficient allowance
+    return {
       to: sellToken,
       value: "0x0",
       data: encodeFunctionData({
@@ -135,7 +132,25 @@ export async function sellTokenApprovalTx(args: {
       }),
     };
   }
-  return approvalTransaction;
+  return null;
+}
+
+export function isNativeAsset(token: string): boolean {
+  return token.toLowerCase() === NATIVE_ASSET.toLowerCase();
+}
+
+export function createOrder(quoteResponse: OrderQuoteResponse): OrderCreation {
+  return {
+    ...quoteResponse.quote,
+    signature: "0x",
+    signingScheme: SigningScheme.PRESIGN,
+    quoteId: quoteResponse.id,
+    // Add from to PRESIGN: {"errorType":"MissingFrom","description":"From address must be specified for on-chain signature"}%
+    from: quoteResponse.from,
+    // TODO: Orders are expiring presumably because of this.
+    // Override the Fee amount because of {"errorType":"NonZeroFee","description":"Fee must be zero"}%
+    feeAmount: "0",
+  };
 }
 
 // Helper function to check token allowance
@@ -153,27 +168,4 @@ async function checkAllowance(
     functionName: "allowance",
     args: [owner, spender],
   });
-}
-
-export function isNativeAsset(token: string): boolean {
-  return token.toLowerCase() === NATIVE_ASSET.toLowerCase();
-}
-
-export function createOrder(args: {
-  quoteResponse: OrderQuoteResponse;
-  quoteRequest: OrderQuoteRequest;
-}) {
-  const order = {
-    ...args.quoteResponse.quote,
-    signature: "0x",
-    signingScheme: SigningScheme.PRESIGN,
-    quoteId: args.quoteResponse.id,
-    // Add from to PRESIGN: {"errorType":"MissingFrom","description":"From address must be specified for on-chain signature"}%
-    from: args.quoteRequest.from,
-    // TODO: Orders are expiring presumably because of this.
-    // Override the Fee amount because of {"errorType":"NonZeroFee","description":"Fee must be zero"}%
-    feeAmount: "0",
-  };
-  console.log("Built Order", order);
-  return order;
 }
