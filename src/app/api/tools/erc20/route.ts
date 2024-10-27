@@ -42,13 +42,17 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     });
     const signRequest = signRequestFor({
       chainId,
-      to: token,
-      value: "0x",
-      data: encodeFunctionData({
-        abi: erc20Abi,
-        functionName: "transfer",
-        args: [recipient, parseUnits(amount.toString(), decimals)],
-      }),
+      metaTransactions: [
+        {
+          to: token,
+          value: "0x",
+          data: encodeFunctionData({
+            abi: erc20Abi,
+            functionName: "transfer",
+            args: [recipient, parseUnits(amount.toString(), decimals)],
+          }),
+        },
+      ],
     });
     return NextResponse.json(signRequest, { status: 200 });
   } catch (error: unknown) {

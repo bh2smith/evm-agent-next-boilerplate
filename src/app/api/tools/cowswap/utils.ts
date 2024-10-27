@@ -1,13 +1,25 @@
 import * as fs from "fs";
 import csv from "csv-parser";
-import { Address, erc20Abi, getAddress, isAddress, parseUnits } from "viem";
+import {
+  Address,
+  encodeFunctionData,
+  erc20Abi,
+  getAddress,
+  isAddress,
+  parseAbi,
+  parseUnits,
+} from "viem";
 import { Network, setupAdapter } from "near-ca";
 import { NextRequest } from "next/server";
 import {
   OrderQuoteRequest,
   OrderQuoteSideKindSell,
 } from "@cowprotocol/cow-sdk";
+import { MetaTransaction } from "near-safe";
 
+const MAX_APPROVAL = BigInt(
+  "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+);
 interface TokenInfo {
   address: Address;
   decimals: number;
@@ -127,7 +139,7 @@ export async function parseQuoteRequest(
     getTokenDetails(chainId, sellToken),
   ]);
 
-  let sender = from;
+  let sender: Address = from;
   if (!isAddress(from)) {
     console.log(`Transforming near address ${from} to EVM address`);
     const adapter = await setupAdapter({
@@ -152,4 +164,60 @@ export async function parseQuoteRequest(
       from: sender,
     },
   };
+}
+
+export async function sellTokenApprovalTx(args: {
+  from: string;
+  sellToken: string;
+  chainId: number;
+  sellAmount: string;
+}): Promise<MetaTransaction | null> {
+  const { from, sellToken, chainId, sellAmount } = args;
+  const GPv2VaultRelayer = "0xC92E8bdf79f0507f65a392b0ab4667716BFE0110";
+
+  const allowance = await checkAllowance(
+    getAddress(from),
+    getAddress(sellToken),
+    GPv2VaultRelayer,
+    chainId,
+  );
+
+  let approvalTransaction = null;
+
+  if (allowance < BigInt(sellAmount)) {
+    console.log(
+      `Insufficient allowance. Required: ${sellAmount}, Approved: ${allowance}`,
+    );
+
+    // Step 2: Build an approval transaction
+    approvalTransaction = {
+      to: sellToken,
+      value: "0x0",
+      data: encodeFunctionData({
+        abi: parseAbi([
+          "function approve(address spender, uint256 amount) external",
+        ]),
+        functionName: "approve",
+        args: [GPv2VaultRelayer, MAX_APPROVAL],
+      }),
+    };
+  }
+  return approvalTransaction;
+}
+
+// Helper function to check token allowance
+async function checkAllowance(
+  owner: Address,
+  token: Address,
+  spender: Address,
+  chainId: number,
+): Promise<bigint> {
+  return Network.fromChainId(chainId).client.readContract({
+    address: token,
+    abi: parseAbi([
+      "function allowance(address owner, address spender) external view returns (uint256)",
+    ]),
+    functionName: "allowance",
+    args: [owner, spender],
+  });
 }

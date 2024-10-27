@@ -1,5 +1,5 @@
 import { SignRequestData } from "near-safe";
-import { ParsedQuoteRequest } from "./utils";
+import { ParsedQuoteRequest, sellTokenApprovalTx } from "./utils";
 import { OrderBookApi, SigningScheme } from "@cowprotocol/cow-sdk";
 import { signRequestFor } from "../weth/utils";
 import { encodeFunctionData, Hex, parseAbi } from "viem";
@@ -20,7 +20,11 @@ export async function orderRequestFlow({
   // We manually add PRESIGN (since this is a safe);
   const quoteResponse = await orderbook.getQuote(adaptedQuoteRequest);
   console.log("Received quote", quoteResponse);
-
+  const approvalTx = await sellTokenApprovalTx({
+    ...quoteRequest,
+    chainId,
+    sellAmount: quoteResponse.quote.sellAmount,
+  });
   // Post Unsigned Order to Orderbook (this might be spam if the user doesn't sign)
   const order = {
     ...quoteResponse.quote,
@@ -38,10 +42,7 @@ export async function orderRequestFlow({
   const orderUid = await orderbook.sendOrder(order);
 
   console.log("Order Posted", orderUid);
-
-  // Encode setPresignature:
-  return signRequestFor({
-    chainId,
+  const preSignatureTx = {
     to: "0x9008D19f58AAbD9eD0D60971565AA8510560ab41",
     value: "0x0",
     data: encodeFunctionData({
@@ -51,5 +52,10 @@ export async function orderRequestFlow({
       functionName: "setPreSignature",
       args: [orderUid as Hex, true],
     }),
+  };
+  // Encode setPresignature:
+  return signRequestFor({
+    chainId,
+    metaTransactions: [...(approvalTx ? [approvalTx] : []), preSignatureTx],
   });
 }
