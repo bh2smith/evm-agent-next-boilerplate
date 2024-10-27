@@ -7,10 +7,12 @@
     "build:next": "next build",
     "start": "next start",
     "lint": "next lint && prettier --check '{src/app,tests}/**/*.{js,jsx,ts,tsx}'",
-    "fmt": "prettier --write '{src/app,tests}/**/*.{js,jsx,ts,tsx}'",
+    "fmt": "next lint --fix && prettier --write '{src/app,tests}/**/*.{js,jsx,ts,tsx}'",
     "test": "jest --config jest.config.ts"
   },
   "dependencies": {
+    "@cowprotocol/cow-sdk": "5.6.0",
+    "csv-parser": "^3.0.0",
     "near-safe": "^0.7.6",
     "next": "15.0.1",
     "react": "19.0.0-rc-69d4b800-20241021",
@@ -19,6 +21,7 @@
     "viem": "^2.21.35"
   },
   "devDependencies": {
+    "@cowprotocol/app-data": "^2.3.0",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.8.1",
     "@types/react": "npm:types-react@19.0.0-rc.1",

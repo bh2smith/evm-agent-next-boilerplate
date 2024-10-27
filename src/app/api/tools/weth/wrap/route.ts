@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseEther, toHex } from "viem";
-import { signRequestFor, validateWethInput } from "../utils";
+import { validateWethInput } from "../utils";
+import { signRequestFor } from "../../util";
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const search = req.nextUrl.searchParams;
@@ -9,10 +10,14 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const { chainId, amount, wethAddress } = validateWethInput(search);
     const signRequest = signRequestFor({
       chainId,
-      to: wethAddress,
-      value: toHex(parseEther(amount.toString())),
-      // methodId for weth.deposit
-      data: "0xd0e30db0",
+      metaTransactions: [
+        {
+          to: wethAddress,
+          value: toHex(parseEther(amount.toString())),
+          // methodId for weth.deposit
+          data: "0xd0e30db0",
+        },
+      ],
     });
     return NextResponse.json(signRequest, { status: 200 });
   } catch (error: unknown) {

@@ -1,5 +1,5 @@
-import { Network, SignRequestData } from "near-safe";
-import { Address, Hex, isAddress, zeroAddress } from "viem";
+import { Network } from "near-safe";
+import { Address, isAddress } from "viem";
 
 interface ValidInput {
   chainId: number;
@@ -40,22 +40,4 @@ export function validateWethInput(params: URLSearchParams): ValidInput {
   }
 
   return { chainId, amount, wethAddress };
-}
-
-export function signRequestFor({
-  chainId,
-  to,
-  value,
-  data,
-}: {
-  chainId: number;
-  to: Address;
-  value: Hex;
-  data: Hex;
-}): SignRequestData {
-  return {
-    method: "eth_sendTransaction",
-    chainId,
-    params: [{ from: zeroAddress, to, data, value }],
-  };
 }

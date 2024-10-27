@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Address, encodeFunctionData, erc20Abi } from "viem";
-import { signRequestFor } from "../weth/utils";
+import { signRequestFor } from "../util";
 import { readContract } from "viem/actions";
 import { Network } from "near-ca";
 import { parseUnits } from "viem/utils";
@@ -42,13 +42,17 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     });
     const signRequest = signRequestFor({
       chainId,
-      to: token,
-      value: "0x",
-      data: encodeFunctionData({
-        abi: erc20Abi,
-        functionName: "transfer",
-        args: [recipient, parseUnits(amount.toString(), decimals)],
-      }),
+      metaTransactions: [
+        {
+          to: token,
+          value: "0x",
+          data: encodeFunctionData({
+            abi: erc20Abi,
+            functionName: "transfer",
+            args: [recipient, parseUnits(amount.toString(), decimals)],
+          }),
+        },
+      ],
     });
     return NextResponse.json(signRequest, { status: 200 });
   } catch (error: unknown) {
