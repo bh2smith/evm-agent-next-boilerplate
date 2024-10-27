@@ -9,6 +9,7 @@ import {
 } from "@/src/app/api/tools/cowswap/util/protocol";
 import {
   BuyTokenDestination,
+  OrderBookApi,
   OrderKind,
   OrderQuoteResponse,
   OrderQuoteSideKindSell,
@@ -16,7 +17,15 @@ import {
   SigningScheme,
 } from "@cowprotocol/cow-sdk";
 import { NextRequest } from "next/server";
-import { checksumAddress, zeroAddress } from "viem";
+import {
+  checksumAddress,
+  Hex,
+  keccak256,
+  toBytes,
+  toHex,
+  zeroAddress,
+} from "viem";
+import { MetadataApi } from "@cowprotocol/app-data";
 
 const SEPOLIA_DAI = "0xb4f1737af37711e9a5890d9510c9bb60e170cb0d";
 const SEPOLIA_COW = "0x0625afb445c3b6b7b929342a04a22599fd5dbb59";
@@ -163,4 +172,57 @@ describe("CowSwap Plugin", () => {
       validTo: 1730022042,
     });
   });
+
+  it("AppData", async () => {
+    const orderbook = new OrderBookApi({ chainId });
+    // cf: https://v1.docs.cow.fi/cow-sdk/order-meta-data-appdata
+    // TODO: Uncomment to Post Agent App Data.
+    // const appCode = "Bitte Protocol";
+    // const referrer = "0x8d99F8b2710e6A3B94d9bf465A98E5273069aCBd";
+    // const appData = await generateAppData(appCode, referrer);
+    // await orderbook.uploadAppData(hash, data);
+    const appData = await generateAppData(
+      "bh2smith.eth",
+      "0x8d99F8b2710e6A3B94d9bf465A98E5273069aCBd",
+    );
+    expect(appData.hash).toBe(
+      "0x1d4141fcce380de6ac7f245cde17caa00fd6ae732f486a65a8fb2fb3eb6b10e7",
+    );
+
+    const exists = await orderbook
+      .getAppData(appData.hash)
+      .then(() => {
+        // If successful, `data` will be the resolved value from `getAppData`.
+        return true;
+      })
+      .catch((error) => {
+        console.error("Error fetching app data:", error.message);
+        return false; // Or any default value to indicate the data does not exist
+      });
+    expect(exists).toBe(true);
+  });
 });
+
+// This function stays out here for now because of a bug with app-data package
+// https://github.com/cowprotocol/app-data/issues/68
+async function generateAppData(
+  appCode: string,
+  referrerAddress: string,
+): Promise<{ hash: Hex; data: string; cid: string }> {
+  const metadataApi = new MetadataApi();
+  const appDataDoc = await metadataApi.generateAppDataDoc({
+    appCode,
+    metadata: { referrer: { address: referrerAddress } },
+  });
+  const appData = await metadataApi.appDataToCid(appDataDoc);
+
+  // Viem Equivalent
+  // const appHash = keccak256(toBytes(JSON.stringify(appDataDoc)));
+  console.log(`Constructed AppData with Hash ${appData.appDataHex}`);
+
+  return {
+    cid: appData.cid,
+    hash: appData.appDataHex,
+    data: appData.appDataContent,
+  };
+}
