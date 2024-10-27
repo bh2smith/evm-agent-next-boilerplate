@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint && prettier --check '{src/app,tests}/**/*.{js,jsx,ts,tsx}'",
     "fmt": "prettier --write '{src/app,tests}/**/*.{js,jsx,ts,tsx}'",
-    "test": "jest --testTimeout 30000"
+    "test": "jest --config jest.config.ts"
   },
   "dependencies": {
     "near-safe": "^0.7.6",
@@ -32,6 +32,8 @@
     "postcss": "^8.4.47",
     "prettier": "^3.3.3",
     "tailwindcss": "^3.4.14",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
     "typescript": "^5.6.3"
   },
   "overrides": {
