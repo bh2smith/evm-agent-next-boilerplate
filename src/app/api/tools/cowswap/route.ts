@@ -1,4 +1,4 @@
-import { parseQuoteRequest } from "@/src/app/api/tools/cowswap/utils";
+import { parseQuoteRequest } from "@/src/app/api/tools/cowswap/util/protocol";
 import { type NextRequest, NextResponse } from "next/server";
 import { orderRequestFlow } from "./orderFlow";
 

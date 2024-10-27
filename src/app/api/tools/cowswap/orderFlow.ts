@@ -5,9 +5,9 @@ import {
   ParsedQuoteRequest,
   sellTokenApprovalTx,
   setPresignatureTx,
-} from "./utils";
+} from "./util/protocol";
 import { OrderBookApi, SigningScheme } from "@cowprotocol/cow-sdk";
-import { signRequestFor } from "../weth/utils";
+import { signRequestFor } from "../util";
 
 export async function orderRequestFlow({
   chainId,

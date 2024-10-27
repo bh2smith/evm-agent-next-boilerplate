@@ -1,5 +1,5 @@
-import { MetaTransaction, Network, SignRequestData } from "near-safe";
-import { Address, getAddress, isAddress, toHex, zeroAddress } from "viem";
+import { Network } from "near-safe";
+import { Address, isAddress } from "viem";
 
 interface ValidInput {
   chainId: number;
@@ -40,23 +40,4 @@ export function validateWethInput(params: URLSearchParams): ValidInput {
   }
 
   return { chainId, amount, wethAddress };
-}
-
-export function signRequestFor({
-  chainId,
-  metaTransactions,
-}: {
-  chainId: number;
-  metaTransactions: MetaTransaction[];
-}): SignRequestData {
-  return {
-    method: "eth_sendTransaction",
-    chainId,
-    params: metaTransactions.map((mt) => ({
-      from: zeroAddress,
-      to: getAddress(mt.to),
-      value: toHex(mt.value),
-      data: toHex(mt.data),
-    })),
-  };
 }

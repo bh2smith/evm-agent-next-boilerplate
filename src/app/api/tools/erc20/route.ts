@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Address, encodeFunctionData, erc20Abi } from "viem";
-import { signRequestFor } from "../weth/utils";
+import { signRequestFor } from "../util";
 import { readContract } from "viem/actions";
 import { Network } from "near-ca";
 import { parseUnits } from "viem/utils";
