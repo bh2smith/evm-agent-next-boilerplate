@@ -7,7 +7,7 @@
     "build:next": "next build",
     "start": "next start",
     "lint": "next lint && prettier --check '{src/app,tests}/**/*.{js,jsx,ts,tsx}'",
-    "fmt": "prettier --write '{src/app,tests}/**/*.{js,jsx,ts,tsx}'",
+    "fmt": "next lint --fix && prettier --write '{src/app,tests}/**/*.{js,jsx,ts,tsx}'",
     "test": "jest --config jest.config.ts"
   },
   "dependencies": {

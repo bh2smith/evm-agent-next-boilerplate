@@ -6,7 +6,7 @@ import {
   sellTokenApprovalTx,
   setPresignatureTx,
 } from "./util/protocol";
-import { OrderBookApi, SigningScheme } from "@cowprotocol/cow-sdk";
+import { OrderBookApi } from "@cowprotocol/cow-sdk";
 import { signRequestFor } from "../util";
 
 export async function orderRequestFlow({
