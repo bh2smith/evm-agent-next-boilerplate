@@ -62,7 +62,7 @@ describe("CowSwap Plugin", () => {
     );
   });
 
-  it("sellTokenApprovalTx", async () => {
+  it("sellTokenApprovalTx: null - already approved", async () => {
     // already approved
     expect(
       await sellTokenApprovalTx({
@@ -72,6 +72,9 @@ describe("CowSwap Plugin", () => {
         chainId,
       }),
     ).toStrictEqual(null);
+  });
+
+  it("sellTokenApprovalTx: not null - not approved", async () => {
     // Not approved
     expect(
       await sellTokenApprovalTx({
@@ -85,6 +88,9 @@ describe("CowSwap Plugin", () => {
       value: "0x0",
       data: "0x095ea7b3000000000000000000000000c92e8bdf79f0507f65a392b0ab4667716bfe0110ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
     });
+  });
+
+  it("sellTokenApprovalTx: throws - not a token", async () => {
     // Not a token.
     await expect(
       sellTokenApprovalTx({
@@ -95,7 +101,6 @@ describe("CowSwap Plugin", () => {
       }),
     ).rejects.toThrow();
   });
-
   it("setPresignatureTx", () => {
     const invalidOrderUid = "fart";
     expect(() => setPresignatureTx(invalidOrderUid)).toThrow(
