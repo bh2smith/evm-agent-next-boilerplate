@@ -11,9 +11,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const signRequest = await orderRequestFlow(parsedRequest);
     // TODO: Update Return Schema (OrderQuote, SignRequest).
     return NextResponse.json(signRequest);
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
+  } catch (e: unknown) {
+    if (
+      e instanceof Error &&
+      "body" in e &&
+      e.body instanceof Object &&
+      "errorType" in e.body &&
+      "description" in e.body
+    ) {
+      const errorMessage = `${e.body.errorType}: ${e.body.description}`;
+      return NextResponse.json({ error: errorMessage }, { status: 400 });
+    }
+
+    const message = e instanceof Error ? e.message : String(e);
     console.error(message);
-    return NextResponse.json({ error }, { status: 400 });
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }
