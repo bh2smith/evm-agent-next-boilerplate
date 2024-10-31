@@ -1,5 +1,5 @@
 import { MetaTransaction, SignRequestData } from "near-safe";
-import { getAddress, toHex, zeroAddress } from "viem";
+import { getAddress, Hex, toHex, zeroAddress } from "viem";
 
 export function signRequestFor({
   chainId,
@@ -8,14 +8,15 @@ export function signRequestFor({
   chainId: number;
   metaTransactions: MetaTransaction[];
 }): SignRequestData {
+  console.log("metaTransactions", metaTransactions);
   return {
     method: "eth_sendTransaction",
     chainId,
     params: metaTransactions.map((mt) => ({
       from: zeroAddress,
       to: getAddress(mt.to),
-      value: toHex(mt.value),
-      data: toHex(mt.data),
+      value: mt.value as Hex,
+      data: mt.data as Hex,
     })),
   };
 }

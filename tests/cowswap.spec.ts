@@ -20,9 +20,9 @@ import { NextRequest } from "next/server";
 import {
   checksumAddress,
   Hex,
-  keccak256,
-  toBytes,
-  toHex,
+  // keccak256,
+  // toBytes,
+  // toHex,
   zeroAddress,
 } from "viem";
 import { MetadataApi } from "@cowprotocol/app-data";
