@@ -21,52 +21,35 @@ export async function orderRequestFlow({
   }
   const orderbook = new OrderBookApi({ chainId });
   console.log(`Requesting quote for ${JSON.stringify(quoteRequest, null, 2)}`);
-  try {
-    const quoteResponse = await orderbook.getQuote(quoteRequest);
-    console.log("Received quote", quoteResponse);
-    const { sellAmount, feeAmount } = quoteResponse.quote;
-    // Adjust the sellAmount to account for the fee.
-    // cf: https://learn.cow.fi/tutorial/submit-order
-    quoteResponse.quote.sellAmount = (
-      BigInt(sellAmount) + BigInt(feeAmount)
-    ).toString();
-    // Post Unsigned Order to Orderbook (this might be spam if the user doesn't sign)
-    const order = createOrder(quoteResponse);
-    console.log("Built Order", order);
 
-    const orderUid = await orderbook.sendOrder(order);
-    console.log("Order Posted", orderbook.getOrderLink(orderUid));
+  const quoteResponse = await orderbook.getQuote(quoteRequest);
+  console.log("Received quote", quoteResponse);
+  const { sellAmount, feeAmount } = quoteResponse.quote;
+  // Adjust the sellAmount to account for the fee.
+  // cf: https://learn.cow.fi/tutorial/submit-order
+  quoteResponse.quote.sellAmount = (
+    BigInt(sellAmount) + BigInt(feeAmount)
+  ).toString();
+  // Post Unsigned Order to Orderbook (this might be spam if the user doesn't sign)
+  const order = createOrder(quoteResponse);
+  console.log("Built Order", order);
 
-    // User must approve the sellToken to trade.
-    const approvalTx = await sellTokenApprovalTx({
-      ...quoteRequest,
-      chainId,
-      sellAmount: quoteResponse.quote.sellAmount,
-    });
+  const orderUid = await orderbook.sendOrder(order);
+  console.log("Order Posted", orderbook.getOrderLink(orderUid));
 
-    return signRequestFor({
-      chainId,
-      metaTransactions: [
-        ...(approvalTx ? [approvalTx] : []),
-        // Encode setPresignature (this is onchain confirmation of order signature.)
-        setPresignatureTx(orderUid),
-      ],
-    });
-  } catch (e: unknown) {
-    console.error("Error requesting quote", e);
-    // Parse the error response
-    if (
-      e instanceof Error &&
-      "body" in e &&
-      e.body instanceof Object &&
-      "errorType" in e.body &&
-      "description" in e.body
-    ) {
-      const errorMessage = `${e.body.errorType}: ${e.body.description}`;
-      throw new Error(errorMessage);
-    }
+  // User must approve the sellToken to trade.
+  const approvalTx = await sellTokenApprovalTx({
+    ...quoteRequest,
+    chainId,
+    sellAmount: quoteResponse.quote.sellAmount,
+  });
 
-    // Fallback for other types of errors
-    throw e;
-  }
+  return signRequestFor({
+    chainId,
+    metaTransactions: [
+      ...(approvalTx ? [approvalTx] : []),
+      // Encode setPresignature (this is onchain confirmation of order signature.)
+      setPresignatureTx(orderUid),
+    ],
+  });
 }

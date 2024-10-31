@@ -1,5 +1,5 @@
 import { MetaTransaction, SignRequestData } from "near-safe";
-import { getAddress, Hex, toHex, zeroAddress } from "viem";
+import { getAddress, Hex, zeroAddress } from "viem";
 
 export function signRequestFor({
   chainId,
