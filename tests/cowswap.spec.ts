@@ -26,6 +26,7 @@ import {
   zeroAddress,
 } from "viem";
 import { MetadataApi } from "@cowprotocol/app-data";
+import { loadTokenMapping } from "@/src/app/api/tools/cowswap/util/tokens";
 
 const SEPOLIA_DAI = "0xb4f1737af37711e9a5890d9510c9bb60e170cb0d";
 const SEPOLIA_COW = "0x0625afb445c3b6b7b929342a04a22599fd5dbb59";
@@ -112,6 +113,11 @@ describe("CowSwap Plugin", () => {
       value: "0x0",
       data: "0xec6cb13f0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000011200000000000000000000000000000000000000000000000000000000000000",
     });
+  });
+
+  it("loadTokenMapping", async () => {
+    const tokenMap = await loadTokenMapping("src/app/api/tools/cowswap/util/tokenlist.csv");
+    console.log(tokenMap[11155111]);
   });
 
   it("parseQuoteRequest", async () => {

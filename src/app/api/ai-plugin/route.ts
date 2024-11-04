@@ -78,7 +78,7 @@ export async function GET() {
       "/api/tools/cowswap": {
         post: {
           tags: ["cowswap"],
-          operationId: "cow-swap",
+          operationId: "swap",
           summary:
             "Quote a price and fee for the specified order parameters. Posts unsigned order to CoW and returns Signable payload",
           description:

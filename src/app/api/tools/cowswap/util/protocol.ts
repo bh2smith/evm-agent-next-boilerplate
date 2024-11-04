@@ -16,7 +16,7 @@ import {
   OrderQuoteSideKindSell,
   SigningScheme,
 } from "@cowprotocol/cow-sdk";
-import { MetaTransaction } from "near-safe";
+import { getClient, MetaTransaction } from "near-safe";
 import { getTokenDetails } from "./tokens";
 
 const MAX_APPROVAL = BigInt(
@@ -48,6 +48,7 @@ export async function parseQuoteRequest(
 ): Promise<ParsedQuoteRequest> {
   // TODO - Add Type Guard on Request (to determine better if it needs processing below.)
   const requestBody = await req.json();
+  console.log("Request Body:", requestBody);
   // TODO: Validate input with new validation tools:
   const { sellToken, buyToken, chainId, sellAmountBeforeFee, from } =
     requestBody;
@@ -160,7 +161,7 @@ async function checkAllowance(
   spender: Address,
   chainId: number,
 ): Promise<bigint> {
-  return Network.fromChainId(chainId).client.readContract({
+  return getClient(chainId).readContract({
     address: token,
     abi: parseAbi([
       "function allowance(address owner, address spender) external view returns (uint256)",

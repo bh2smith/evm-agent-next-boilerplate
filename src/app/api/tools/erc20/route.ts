@@ -11,6 +11,7 @@ import {
   numberField,
   validateInput,
 } from "../validate";
+import { getClient } from "near-safe";
 
 // Declare Route Input
 interface Input {
@@ -35,7 +36,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       search,
       parsers,
     );
-    const decimals = await readContract(Network.fromChainId(chainId).client, {
+    const decimals = await readContract(getClient(chainId), {
       address: token,
       functionName: "decimals",
       abi: erc20Abi,
