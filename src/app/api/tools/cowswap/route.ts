@@ -6,7 +6,6 @@ import { orderRequestFlow } from "./orderFlow";
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
-    console.log("RAW POST Request for quote:", req);
     const parsedRequest = await parseQuoteRequest(req);
     console.log("POST Request for quote:", parsedRequest);
     const signRequest = await orderRequestFlow(parsedRequest);

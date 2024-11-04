@@ -48,7 +48,7 @@ export async function parseQuoteRequest(
 ): Promise<ParsedQuoteRequest> {
   // TODO - Add Type Guard on Request (to determine better if it needs processing below.)
   const requestBody = await req.json();
-  console.log("Request Body:", requestBody);
+  console.log("Raw Request Body:", requestBody);
   // TODO: Validate input with new validation tools:
   const { sellToken, buyToken, chainId, sellAmountBeforeFee, from } =
     requestBody;
@@ -63,7 +63,9 @@ export async function parseQuoteRequest(
     console.log(`Transforming near address ${from} to EVM address`);
     const adapter = await setupAdapter({
       accountId: from,
-      mpcContractId: "v1.signer",
+      mpcContractId: from.includes(".testnet")
+        ? "v1.signer-prod.testnet"
+        : "v1.signer",
     });
     sender = adapter.address;
   }
