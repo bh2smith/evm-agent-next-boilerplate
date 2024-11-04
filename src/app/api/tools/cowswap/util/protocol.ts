@@ -7,7 +7,7 @@ import {
   parseAbi,
   parseUnits,
 } from "viem";
-import { Network, setupAdapter } from "near-ca";
+import { setupAdapter } from "near-ca";
 import { NextRequest } from "next/server";
 import {
   OrderCreation,
