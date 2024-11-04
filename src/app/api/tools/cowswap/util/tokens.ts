@@ -15,6 +15,7 @@ const DuneNetworkMap: { [key: string]: number } = {
   ethereum: 1,
   gnosis: 100,
   arbitrum: 42161,
+  sepolia: 11155111,
 };
 
 export async function loadTokenMapping(

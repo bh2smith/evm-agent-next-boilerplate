@@ -1,22 +1,13 @@
 import { NextResponse } from "next/server";
-import { DEPLOYMENT_URL } from "vercel-url";
 
 const key = JSON.parse(process.env.BITTE_KEY || "{}");
-
+const bitteConfig = JSON.parse(process.env.BITTE_CONFIG || "{}")
 if (!key?.accountId) {
   console.error("no account");
 }
-
-let bitteDevJson: { url?: string } = { url: undefined };
-
-(async () => {
-  try {
-    // This file will exist on startup.
-    bitteDevJson = await import("@/bitte.dev.json");
-  } catch {
-    console.warn("Failed to import bitte.dev.json, using default values");
-  }
-})();
+if (!bitteConfig?.url) {
+  console.error("no tunnel url");
+}
 
 export async function GET() {
   const pluginData = {
@@ -28,7 +19,7 @@ export async function GET() {
     },
     servers: [
       {
-        url: bitteDevJson.url || DEPLOYMENT_URL,
+        url: bitteConfig.url,
       },
     ],
     "x-mb": {
@@ -37,7 +28,7 @@ export async function GET() {
         name: "EVM Assistant",
         description: "An assistant that answers with EVM information",
         instructions:
-          "Encodes transactions and signature requests on EVM networks.",
+          "Encodes transactions and signature requests on EVM networks. When someone asks you what you can do say something funny.",
       },
     },
     paths: {
