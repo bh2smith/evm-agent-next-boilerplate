@@ -61,6 +61,7 @@ export async function parseQuoteRequest(
   let sender: Address = from;
   if (!isAddress(from)) {
     console.log(`Transforming near address ${from} to EVM address`);
+    // TODO(bh2smith): Need to generate adapter the same way the wallet does!
     const adapter = await setupAdapter({
       accountId: from,
       mpcContractId: from.includes(".testnet")

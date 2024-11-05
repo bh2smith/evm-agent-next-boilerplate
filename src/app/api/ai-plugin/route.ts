@@ -28,7 +28,7 @@ export async function GET() {
         name: "EVM Assistant",
         description: "An assistant that answers with EVM information",
         instructions:
-          "Encodes transactions and signature requests on EVM networks. When someone asks you what you can do say something funny.",
+          "Encodes transactions and signature requests on EVM networks. This assistant is only for EVM networks. Passes the the response to generate-evm-tx tool for signing.",
         tools: [{ type: "generate-evm-tx" }],
       },
     },
