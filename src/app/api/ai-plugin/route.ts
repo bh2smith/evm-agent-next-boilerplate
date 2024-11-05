@@ -28,7 +28,7 @@ export async function GET() {
         name: "EVM Assistant",
         description: "An assistant that answers with EVM information",
         instructions:
-          "Encodes transactions and signature requests on EVM networks. This assistant is only for EVM networks. Passes the the response to generate-evm-tx tool for signing.",
+          "Encodes transactions and signature requests on EVM networks. This assistant is only for EVM networks. Passes the the transaction fields of the response to generate-evm-tx tool for signing and displays the meta content of the response to the user after signing.",
         tools: [{ type: "generate-evm-tx" }],
       },
     },
@@ -155,7 +155,7 @@ export async function GET() {
             },
           },
           responses: {
-            "200": { $ref: "#/components/responses/MetaTransaction200" },
+            "200": { $ref: "#/components/responses/SignRequestResponse200" },
             "400": {
               description: "Error quoting order.",
               content: {
@@ -293,6 +293,30 @@ export async function GET() {
               schema: {
                 $ref: "#/components/schemas/SignRequest",
               },
+            },
+          },
+        },
+        SignRequestResponse200: {
+          description: "Cowswap order response including transaction and order URL",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  transaction: {
+                    $ref: "#/components/schemas/SignRequest"
+                  },
+                  meta: {
+                    type: "object",
+                    description: "Additional metadata related to the transaction",
+                    additionalProperties: true,
+                    example: {
+                      orderUrl: "https://explorer.cow.fi/orders/0x123..."
+                    }
+                  }
+                },
+                required: ["transaction"]
+              }
             },
           },
         },

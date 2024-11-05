@@ -12,7 +12,10 @@ import { signRequestFor } from "../util";
 export async function orderRequestFlow({
   chainId,
   quoteRequest,
-}: ParsedQuoteRequest): Promise<SignRequestData> {
+}: ParsedQuoteRequest): Promise<{
+  transaction: SignRequestData;
+  meta: {orderUrl: string};
+}> {
   if (isNativeAsset(quoteRequest.sellToken)) {
     // TODO: Integrate EthFlow
     throw new Error(
@@ -44,12 +47,15 @@ export async function orderRequestFlow({
     sellAmount: quoteResponse.quote.sellAmount,
   });
 
-  return signRequestFor({
-    chainId,
-    metaTransactions: [
+  return {
+    transaction: signRequestFor({
+      chainId,
+      metaTransactions: [
       ...(approvalTx ? [approvalTx] : []),
       // Encode setPresignature (this is onchain confirmation of order signature.)
       setPresignatureTx(orderUid),
-    ],
-  });
+      ],
+    }),
+    meta: { orderUrl: `explorer.cow.fi/orders/${orderUid}` },
+  };
 }
