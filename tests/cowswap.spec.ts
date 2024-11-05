@@ -1,6 +1,7 @@
 import { orderRequestFlow } from "@/src/app/api/tools/cowswap/orderFlow";
 import {
   createOrder,
+  generateAppData,
   isNativeAsset,
   NATIVE_ASSET,
   parseQuoteRequest,
@@ -17,15 +18,7 @@ import {
   SigningScheme,
 } from "@cowprotocol/cow-sdk";
 import { NextRequest } from "next/server";
-import {
-  checksumAddress,
-  Hex,
-  // keccak256,
-  // toBytes,
-  // toHex,
-  zeroAddress,
-} from "viem";
-import { MetadataApi } from "@cowprotocol/app-data";
+import { checksumAddress, zeroAddress } from "viem";
 import { loadTokenMapping } from "@/src/app/api/tools/cowswap/util/tokens";
 
 const SEPOLIA_DAI = "0xb4f1737af37711e9a5890d9510c9bb60e170cb0d";
@@ -215,27 +208,3 @@ describe("CowSwap Plugin", () => {
     expect(exists).toBe(true);
   });
 });
-
-// This function stays out here for now because of a bug with app-data package
-// https://github.com/cowprotocol/app-data/issues/68
-async function generateAppData(
-  appCode: string,
-  referrerAddress: string,
-): Promise<{ hash: Hex; data: string; cid: string }> {
-  const metadataApi = new MetadataApi();
-  const appDataDoc = await metadataApi.generateAppDataDoc({
-    appCode,
-    metadata: { referrer: { address: referrerAddress } },
-  });
-  const appData = await metadataApi.appDataToCid(appDataDoc);
-
-  // Viem Equivalent
-  // const appHash = keccak256(toBytes(JSON.stringify(appDataDoc)));
-  console.log(`Constructed AppData with Hash ${appData.appDataHex}`);
-
-  return {
-    cid: appData.cid,
-    hash: appData.appDataHex,
-    data: appData.appDataContent,
-  };
-}

@@ -1,5 +1,6 @@
 import { SignRequestData } from "near-safe";
 import {
+  buildAndPostAppData,
   createOrder,
   isNativeAsset,
   ParsedQuoteRequest,
@@ -14,7 +15,7 @@ export async function orderRequestFlow({
   quoteRequest,
 }: ParsedQuoteRequest): Promise<{
   transaction: SignRequestData;
-  meta: {orderUrl: string};
+  meta: { orderUrl: string };
 }> {
   if (isNativeAsset(quoteRequest.sellToken)) {
     // TODO: Integrate EthFlow
@@ -34,6 +35,11 @@ export async function orderRequestFlow({
     BigInt(sellAmount) + BigInt(feeAmount)
   ).toString();
   // Post Unsigned Order to Orderbook (this might be spam if the user doesn't sign)
+  quoteResponse.quote.appData = await buildAndPostAppData(
+    orderbook,
+    "bitte.ai/CowAgent",
+    "0x8d99F8b2710e6A3B94d9bf465A98E5273069aCBd",
+  );
   const order = createOrder(quoteResponse);
   console.log("Built Order", order);
 
@@ -51,9 +57,9 @@ export async function orderRequestFlow({
     transaction: signRequestFor({
       chainId,
       metaTransactions: [
-      ...(approvalTx ? [approvalTx] : []),
-      // Encode setPresignature (this is onchain confirmation of order signature.)
-      setPresignatureTx(orderUid),
+        ...(approvalTx ? [approvalTx] : []),
+        // Encode setPresignature (this is onchain confirmation of order signature.)
+        setPresignatureTx(orderUid),
       ],
     }),
     meta: { orderUrl: `explorer.cow.fi/orders/${orderUid}` },

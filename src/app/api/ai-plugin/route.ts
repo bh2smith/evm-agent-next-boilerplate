@@ -297,26 +297,28 @@ export async function GET() {
           },
         },
         SignRequestResponse200: {
-          description: "Cowswap order response including transaction and order URL",
+          description:
+            "Cowswap order response including transaction and order URL",
           content: {
             "application/json": {
               schema: {
                 type: "object",
                 properties: {
                   transaction: {
-                    $ref: "#/components/schemas/SignRequest"
+                    $ref: "#/components/schemas/SignRequest",
                   },
                   meta: {
                     type: "object",
-                    description: "Additional metadata related to the transaction",
+                    description:
+                      "Additional metadata related to the transaction",
                     additionalProperties: true,
                     example: {
-                      orderUrl: "https://explorer.cow.fi/orders/0x123..."
-                    }
-                  }
+                      orderUrl: "https://explorer.cow.fi/orders/0x123...",
+                    },
+                  },
                 },
-                required: ["transaction"]
-              }
+                required: ["transaction"],
+              },
             },
           },
         },
