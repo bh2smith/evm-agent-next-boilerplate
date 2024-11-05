@@ -7,7 +7,6 @@ import {
   parseAbi,
   parseUnits,
 } from "viem";
-import { setupAdapter } from "near-ca";
 import { NextRequest } from "next/server";
 import {
   OrderCreation,
@@ -16,7 +15,7 @@ import {
   OrderQuoteSideKindSell,
   SigningScheme,
 } from "@cowprotocol/cow-sdk";
-import { getClient, MetaTransaction } from "near-safe";
+import { getClient, MetaTransaction, NearSafe } from "near-safe";
 import { getTokenDetails } from "./tokens";
 
 const MAX_APPROVAL = BigInt(
@@ -61,12 +60,14 @@ export async function parseQuoteRequest(
   let sender: Address = from;
   if (!isAddress(from)) {
     console.log(`Transforming near address ${from} to EVM address`);
-    // TODO(bh2smith): Need to generate adapter the same way the wallet does!
-    const adapter = await setupAdapter({
-      accountId: from,
-      mpcContractId: from.includes(".testnet")
-        ? "v1.signer-prod.testnet"
-        : "v1.signer",
+    const adapter = await NearSafe.create({
+      mpc: {
+        accountId: from,
+        mpcContractId: from.includes(".testnet")
+          ? "v1.signer-prod.testnet"
+          : "v1.signer",
+      },
+      pimlicoKey: "", // This is a readonly adapter.
     });
     sender = adapter.address;
   }
