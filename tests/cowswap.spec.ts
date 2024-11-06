@@ -147,6 +147,9 @@ describe("CowSwap Plugin", () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "mb-metadata": JSON.stringify({
+          accountId: "neareth-dev.testnet",
+        }),
       },
       body: JSON.stringify(quoteRequest),
     });
@@ -154,9 +157,9 @@ describe("CowSwap Plugin", () => {
       chainId: 11155111,
       quoteRequest: {
         buyToken: "0x0625afb445c3b6b7b929342a04a22599fd5dbb59",
-        from: "0x7fa8e8264985C7525Fc50F98aC1A9b3765405489",
+        from: "0x5E1E315D96BD81c8f65c576CFD6E793aa091b480",
         kind: "sell",
-        receiver: "0x7fa8e8264985C7525Fc50F98aC1A9b3765405489",
+        receiver: "0x5E1E315D96BD81c8f65c576CFD6E793aa091b480",
         sellAmountBeforeFee: "2000000000000000000000000000000000000",
         sellToken: "0xb4f1737af37711e9a5890d9510c9bb60e170cb0d",
         signingScheme: "presign",
