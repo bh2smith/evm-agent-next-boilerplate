@@ -16,6 +16,8 @@ import {
   OrderQuoteResponse,
   OrderQuoteSideKindSell,
   SigningScheme,
+  OrderParameters,
+  OrderKind,
 } from "@cowprotocol/cow-sdk";
 import { getClient, MetaTransaction, NearSafe } from "near-safe";
 import { getTokenDetails } from "./tokens";
@@ -160,6 +162,36 @@ export function createOrder(quoteResponse: OrderQuoteResponse): OrderCreation {
     // Override the Fee amount because of {"errorType":"NonZeroFee","description":"Fee must be zero"}%
     feeAmount: "0",
   };
+}
+
+type SlippageOrderParameters = Pick<
+  OrderParameters,
+  "kind" | "buyAmount" | "sellAmount"
+>;
+
+export function applySlippage(
+  order: SlippageOrderParameters,
+  bps: number,
+): { buyAmount?: string; sellAmount?: string } {
+  const scaleFactor = BigInt(10000);
+  if (order.kind === OrderKind.SELL) {
+    const slippageBps = BigInt(10000 - bps); // 99.50% (100% - 0.5%)
+    return {
+      buyAmount: (
+        (BigInt(order.buyAmount) * slippageBps) /
+        scaleFactor
+      ).toString(),
+    };
+  } else if (order.kind === OrderKind.BUY) {
+    const slippageBps = BigInt(10000 + bps); // 99.50% (100% - 0.5%)
+    return {
+      sellAmount: (
+        (BigInt(order.sellAmount) * slippageBps) /
+        scaleFactor
+      ).toString(),
+    };
+  }
+  return order;
 }
 
 // Helper function to check token allowance

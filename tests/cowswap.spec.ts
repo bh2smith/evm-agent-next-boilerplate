@@ -1,5 +1,6 @@
 import { orderRequestFlow } from "@/src/app/api/tools/cowswap/orderFlow";
 import {
+  applySlippage,
   createOrder,
   generateAppData,
   isNativeAsset,
@@ -45,6 +46,32 @@ describe("CowSwap Plugin", () => {
     console.log(
       `https://testnet.wallet.bitte.ai/sign-evm?evmTx=${encodeURI(JSON.stringify(signRequest))}`,
     );
+  });
+
+  it("applySlippage", async () => {
+    const amounts = { buyAmount: "1000", sellAmount: "1000" };
+    expect(
+      applySlippage({ kind: OrderKind.BUY, ...amounts }, 50),
+    ).toStrictEqual({
+      sellAmount: "1005",
+    });
+    expect(
+      applySlippage({ kind: OrderKind.SELL, ...amounts }, 50),
+    ).toStrictEqual({
+      buyAmount: "995",
+    });
+
+    const smallAmounts = { buyAmount: "100", sellAmount: "100" };
+    expect(
+      applySlippage({ kind: OrderKind.BUY, ...smallAmounts }, 100),
+    ).toStrictEqual({
+      sellAmount: "101",
+    });
+    expect(
+      applySlippage({ kind: OrderKind.SELL, ...smallAmounts }, 100),
+    ).toStrictEqual({
+      buyAmount: "99",
+    });
   });
   it("isNativeAsset", () => {
     expect(isNativeAsset("word")).toBe(false);
