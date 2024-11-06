@@ -125,15 +125,6 @@ export async function GET() {
             },
             {
               in: "query",
-              name: "from",
-              required: true,
-              schema: {
-                type: "string",
-              },
-              description: "The address from which the order is sent.",
-            },
-            {
-              in: "query",
               name: "sellAmountBeforeFee",
               required: true,
               schema: {

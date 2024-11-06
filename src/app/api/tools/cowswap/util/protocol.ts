@@ -3,7 +3,6 @@ import {
   encodeFunctionData,
   getAddress,
   Hex,
-  isAddress,
   isHex,
   parseAbi,
   parseUnits,
@@ -19,10 +18,11 @@ import {
   OrderParameters,
   OrderKind,
 } from "@cowprotocol/cow-sdk";
-import { getClient, MetaTransaction, NearSafe } from "near-safe";
+import { getClient, MetaTransaction } from "near-safe";
 import { getTokenDetails } from "./tokens";
 // @ts-expect-error: something is wrong with the app-data package
 import { MetadataApi } from "@cowprotocol/app-data";
+import { extractAccountId } from "../../util";
 
 const MAX_APPROVAL = BigInt(
   "115792089237316195423570985008687907853269984665640564039457584007913129639935",
@@ -32,16 +32,6 @@ const MAX_APPROVAL = BigInt(
 export const NATIVE_ASSET = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 const GPV2SettlementContract = "0x9008D19f58AAbD9eD0D60971565AA8510560ab41";
 const GPv2VaultRelayer = "0xC92E8bdf79f0507f65a392b0ab4667716BFE0110";
-
-export interface QuoteRequestBody {
-  sellToken: Address;
-  buyToken: Address;
-  sellAmountBeforeFee: string;
-  kind: "buy" | "sell";
-  receiver: Address;
-  from: Address;
-  chainId: number;
-}
 
 export interface ParsedQuoteRequest {
   quoteRequest: OrderQuoteRequest;
@@ -55,28 +45,14 @@ export async function parseQuoteRequest(
   const requestBody = await req.json();
   console.log("Raw Request Body:", requestBody);
   // TODO: Validate input with new validation tools:
-  const { sellToken, buyToken, chainId, sellAmountBeforeFee, from } =
-    requestBody;
+  const { sellToken, buyToken, chainId, sellAmountBeforeFee } = requestBody;
 
   const [buyTokenData, sellTokenData] = await Promise.all([
     getTokenDetails(chainId, buyToken),
     getTokenDetails(chainId, sellToken),
   ]);
 
-  let sender: Address = from;
-  if (!isAddress(from)) {
-    console.log(`Transforming near address ${from} to EVM address`);
-    const adapter = await NearSafe.create({
-      mpc: {
-        accountId: from,
-        mpcContractId: from.includes(".testnet")
-          ? "v1.signer-prod.testnet"
-          : "v1.signer",
-      },
-      pimlicoKey: "", // This is a readonly adapter.
-    });
-    sender = adapter.address;
-  }
+  const { safeAddress: sender } = await extractAccountId(req);
 
   return {
     chainId,
@@ -87,6 +63,7 @@ export async function parseQuoteRequest(
         sellAmountBeforeFee,
         sellTokenData.decimals,
       ).toString(),
+      // TODO - change this when we want to enable buy orders.
       kind: OrderQuoteSideKindSell.SELL,
       // TODO - change this when we want to enable alternate recipients.
       receiver: sender,
