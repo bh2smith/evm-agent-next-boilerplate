@@ -26,12 +26,9 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Run lint
-        run: bun lint
-
-      - name: Run tests
-        run: bun test
-      # Skip Build until this issue is resolved:
-      # Module not found: Can't resolve '@/bitte.dev.json'
-      # - name: Build
-      #   run: bun build:next
+      - name: Run lint & Test
+        run: |
+          bun lint
+          bun test
+      - name: Build
+        run: 
