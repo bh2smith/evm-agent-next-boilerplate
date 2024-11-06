@@ -8,9 +8,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const parsedRequest = await parseQuoteRequest(req);
     console.log("POST Request for quote:", parsedRequest);
-    const signRequest = await orderRequestFlow(parsedRequest);
-    // TODO: Update Return Schema (OrderQuote, SignRequest).
-    return NextResponse.json(signRequest);
+    const orderData = await orderRequestFlow(parsedRequest);
+    return NextResponse.json(orderData, { status: 200 });
   } catch (e: unknown) {
     if (
       e instanceof Error &&

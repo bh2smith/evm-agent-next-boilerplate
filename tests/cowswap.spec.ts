@@ -1,6 +1,8 @@
 import { orderRequestFlow } from "@/src/app/api/tools/cowswap/orderFlow";
 import {
+  applySlippage,
   createOrder,
+  generateAppData,
   isNativeAsset,
   NATIVE_ASSET,
   parseQuoteRequest,
@@ -17,15 +19,8 @@ import {
   SigningScheme,
 } from "@cowprotocol/cow-sdk";
 import { NextRequest } from "next/server";
-import {
-  checksumAddress,
-  Hex,
-  // keccak256,
-  // toBytes,
-  // toHex,
-  zeroAddress,
-} from "viem";
-import { MetadataApi } from "@cowprotocol/app-data";
+import { checksumAddress, zeroAddress } from "viem";
+import { loadTokenMapping } from "@/src/app/api/tools/cowswap/util/tokens";
 
 const SEPOLIA_DAI = "0xb4f1737af37711e9a5890d9510c9bb60e170cb0d";
 const SEPOLIA_COW = "0x0625afb445c3b6b7b929342a04a22599fd5dbb59";
@@ -51,6 +46,32 @@ describe("CowSwap Plugin", () => {
     console.log(
       `https://testnet.wallet.bitte.ai/sign-evm?evmTx=${encodeURI(JSON.stringify(signRequest))}`,
     );
+  });
+
+  it("applySlippage", async () => {
+    const amounts = { buyAmount: "1000", sellAmount: "1000" };
+    expect(
+      applySlippage({ kind: OrderKind.BUY, ...amounts }, 50),
+    ).toStrictEqual({
+      sellAmount: "1005",
+    });
+    expect(
+      applySlippage({ kind: OrderKind.SELL, ...amounts }, 50),
+    ).toStrictEqual({
+      buyAmount: "995",
+    });
+
+    const smallAmounts = { buyAmount: "100", sellAmount: "100" };
+    expect(
+      applySlippage({ kind: OrderKind.BUY, ...smallAmounts }, 100),
+    ).toStrictEqual({
+      sellAmount: "101",
+    });
+    expect(
+      applySlippage({ kind: OrderKind.SELL, ...smallAmounts }, 100),
+    ).toStrictEqual({
+      buyAmount: "99",
+    });
   });
   it("isNativeAsset", () => {
     expect(isNativeAsset("word")).toBe(false);
@@ -114,11 +135,21 @@ describe("CowSwap Plugin", () => {
     });
   });
 
+  it("loadTokenMapping", async () => {
+    const tokenMap = await loadTokenMapping(
+      "src/app/api/tools/cowswap/util/tokenlist.csv",
+    );
+    console.log(tokenMap[11155111]);
+  });
+
   it("parseQuoteRequest", async () => {
     const request = new NextRequest("https://fake-url.xyz", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "mb-metadata": JSON.stringify({
+          accountId: "neareth-dev.testnet",
+        }),
       },
       body: JSON.stringify(quoteRequest),
     });
@@ -126,9 +157,9 @@ describe("CowSwap Plugin", () => {
       chainId: 11155111,
       quoteRequest: {
         buyToken: "0x0625afb445c3b6b7b929342a04a22599fd5dbb59",
-        from: "0x7fa8e8264985C7525Fc50F98aC1A9b3765405489",
+        from: "0x5E1E315D96BD81c8f65c576CFD6E793aa091b480",
         kind: "sell",
-        receiver: "0x7fa8e8264985C7525Fc50F98aC1A9b3765405489",
+        receiver: "0x5E1E315D96BD81c8f65c576CFD6E793aa091b480",
         sellAmountBeforeFee: "2000000000000000000000000000000000000",
         sellToken: "0xb4f1737af37711e9a5890d9510c9bb60e170cb0d",
         signingScheme: "presign",
@@ -207,27 +238,3 @@ describe("CowSwap Plugin", () => {
     expect(exists).toBe(true);
   });
 });
-
-// This function stays out here for now because of a bug with app-data package
-// https://github.com/cowprotocol/app-data/issues/68
-async function generateAppData(
-  appCode: string,
-  referrerAddress: string,
-): Promise<{ hash: Hex; data: string; cid: string }> {
-  const metadataApi = new MetadataApi();
-  const appDataDoc = await metadataApi.generateAppDataDoc({
-    appCode,
-    metadata: { referrer: { address: referrerAddress } },
-  });
-  const appData = await metadataApi.appDataToCid(appDataDoc);
-
-  // Viem Equivalent
-  // const appHash = keccak256(toBytes(JSON.stringify(appDataDoc)));
-  console.log(`Constructed AppData with Hash ${appData.appDataHex}`);
-
-  return {
-    cid: appData.cid,
-    hash: appData.appDataHex,
-    data: appData.appDataContent,
-  };
-}

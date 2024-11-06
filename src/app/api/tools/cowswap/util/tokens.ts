@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import csv from "csv-parser";
 import { Address, erc20Abi, getAddress, isAddress } from "viem";
-import { Network } from "near-ca";
+import { getClient } from "near-safe";
 
 interface TokenInfo {
   address: Address;
@@ -9,18 +9,21 @@ interface TokenInfo {
 }
 
 type SymbolMapping = Record<string, TokenInfo>;
-type BlockchainMapping = Record<number, SymbolMapping>;
+type ChainId = number;
+type BlockchainMapping = Record<ChainId, SymbolMapping>;
 
 const DuneNetworkMap: { [key: string]: number } = {
   ethereum: 1,
   gnosis: 100,
   arbitrum: 42161,
+  sepolia: 11155111,
 };
 
 export async function loadTokenMapping(
   filePath: string,
 ): Promise<BlockchainMapping> {
   const mapping: BlockchainMapping = {};
+  console.log("Loading token mapping from:", filePath);
 
   return new Promise((resolve, reject) => {
     fs.createReadStream(filePath)
@@ -68,8 +71,9 @@ export async function getTokenDetails(
   // Token data comes from https://dune.com/queries/4055949
   //  curl -X GET https://api.dune.com/api/v1/query/4055949/results/csv -H "x-dune-api-key: $DUNE_API_KEY"  > tokens.csv
   if (!tokenMap) {
-    // half-ass attempt to load to memory.
-    tokenMap = await loadTokenMapping("./tokenlist.csv");
+    tokenMap = await loadTokenMapping(
+      "src/app/api/tools/cowswap/util/tokenlist.csv",
+    );
   }
   return tokenMap[chainId][symbolOrAddress];
 }
@@ -79,7 +83,7 @@ async function getTokenDecimals(
   chainId: number,
   tokenAddress: string,
 ): Promise<number> {
-  const client = Network.fromChainId(chainId).client;
+  const client = getClient(chainId);
   try {
     const decimals = await client.readContract({
       address: getAddress(tokenAddress),

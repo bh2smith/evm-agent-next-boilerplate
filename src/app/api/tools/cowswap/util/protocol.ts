@@ -2,22 +2,27 @@ import {
   Address,
   encodeFunctionData,
   getAddress,
-  isAddress,
+  Hex,
   isHex,
   parseAbi,
   parseUnits,
 } from "viem";
-import { Network, setupAdapter } from "near-ca";
 import { NextRequest } from "next/server";
 import {
+  OrderBookApi,
   OrderCreation,
   OrderQuoteRequest,
   OrderQuoteResponse,
   OrderQuoteSideKindSell,
   SigningScheme,
+  OrderParameters,
+  OrderKind,
 } from "@cowprotocol/cow-sdk";
-import { MetaTransaction } from "near-safe";
+import { getClient, MetaTransaction } from "near-safe";
 import { getTokenDetails } from "./tokens";
+// @ts-expect-error: something is wrong with the app-data package
+import { MetadataApi } from "@cowprotocol/app-data";
+import { extractAccountId } from "../../util";
 
 const MAX_APPROVAL = BigInt(
   "115792089237316195423570985008687907853269984665640564039457584007913129639935",
@@ -27,16 +32,6 @@ const MAX_APPROVAL = BigInt(
 export const NATIVE_ASSET = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 const GPV2SettlementContract = "0x9008D19f58AAbD9eD0D60971565AA8510560ab41";
 const GPv2VaultRelayer = "0xC92E8bdf79f0507f65a392b0ab4667716BFE0110";
-
-export interface QuoteRequestBody {
-  sellToken: Address;
-  buyToken: Address;
-  sellAmountBeforeFee: string;
-  kind: "buy" | "sell";
-  receiver: Address;
-  from: Address;
-  chainId: number;
-}
 
 export interface ParsedQuoteRequest {
   quoteRequest: OrderQuoteRequest;
@@ -48,24 +43,16 @@ export async function parseQuoteRequest(
 ): Promise<ParsedQuoteRequest> {
   // TODO - Add Type Guard on Request (to determine better if it needs processing below.)
   const requestBody = await req.json();
+  console.log("Raw Request Body:", requestBody);
   // TODO: Validate input with new validation tools:
-  const { sellToken, buyToken, chainId, sellAmountBeforeFee, from } =
-    requestBody;
+  const { sellToken, buyToken, chainId, sellAmountBeforeFee } = requestBody;
 
   const [buyTokenData, sellTokenData] = await Promise.all([
     getTokenDetails(chainId, buyToken),
     getTokenDetails(chainId, sellToken),
   ]);
 
-  let sender: Address = from;
-  if (!isAddress(from)) {
-    console.log(`Transforming near address ${from} to EVM address`);
-    const adapter = await setupAdapter({
-      accountId: from,
-      mpcContractId: "v1.signer",
-    });
-    sender = adapter.address;
-  }
+  const { safeAddress: sender } = await extractAccountId(req);
 
   return {
     chainId,
@@ -76,6 +63,7 @@ export async function parseQuoteRequest(
         sellAmountBeforeFee,
         sellTokenData.decimals,
       ).toString(),
+      // TODO - change this when we want to enable buy orders.
       kind: OrderQuoteSideKindSell.SELL,
       // TODO - change this when we want to enable alternate recipients.
       receiver: sender,
@@ -153,6 +141,36 @@ export function createOrder(quoteResponse: OrderQuoteResponse): OrderCreation {
   };
 }
 
+type SlippageOrderParameters = Pick<
+  OrderParameters,
+  "kind" | "buyAmount" | "sellAmount"
+>;
+
+export function applySlippage(
+  order: SlippageOrderParameters,
+  bps: number,
+): { buyAmount?: string; sellAmount?: string } {
+  const scaleFactor = BigInt(10000);
+  if (order.kind === OrderKind.SELL) {
+    const slippageBps = BigInt(10000 - bps); // 99.50% (100% - 0.5%)
+    return {
+      buyAmount: (
+        (BigInt(order.buyAmount) * slippageBps) /
+        scaleFactor
+      ).toString(),
+    };
+  } else if (order.kind === OrderKind.BUY) {
+    const slippageBps = BigInt(10000 + bps); // 99.50% (100% - 0.5%)
+    return {
+      sellAmount: (
+        (BigInt(order.sellAmount) * slippageBps) /
+        scaleFactor
+      ).toString(),
+    };
+  }
+  return order;
+}
+
 // Helper function to check token allowance
 async function checkAllowance(
   owner: Address,
@@ -160,7 +178,7 @@ async function checkAllowance(
   spender: Address,
   chainId: number,
 ): Promise<bigint> {
-  return Network.fromChainId(chainId).client.readContract({
+  return getClient(chainId).readContract({
     address: token,
     abi: parseAbi([
       "function allowance(address owner, address spender) external view returns (uint256)",
@@ -168,4 +186,51 @@ async function checkAllowance(
     functionName: "allowance",
     args: [owner, spender],
   });
+}
+
+// This function stays out here for now because of a bug with app-data package
+// https://github.com/cowprotocol/app-data/issues/68
+export async function generateAppData(
+  appCode: string,
+  referrerAddress: string,
+): Promise<{ hash: Hex; data: string; cid: string }> {
+  const metadataApi = new MetadataApi();
+  const appDataDoc = await metadataApi.generateAppDataDoc({
+    appCode,
+    metadata: { referrer: { address: referrerAddress } },
+  });
+  const appData = await metadataApi.appDataToCid(appDataDoc);
+
+  // Viem Equivalent
+  // const appHash = keccak256(toBytes(JSON.stringify(appDataDoc)));
+  console.log(`Constructed AppData with Hash ${appData.appDataHex}`);
+
+  return {
+    cid: appData.cid,
+    hash: appData.appDataHex,
+    data: appData.appDataContent,
+  };
+}
+
+export async function buildAndPostAppData(
+  orderbook: OrderBookApi,
+  appCode: string,
+  referrerAddress: string,
+): Promise<Hex> {
+  const appData = await generateAppData(appCode, referrerAddress);
+
+  const exists = await orderbook
+    .getAppData(appData.hash)
+    .then(() => {
+      // If successful, `data` will be the resolved value from `getAppData`.
+      return true;
+    })
+    .catch((error) => {
+      console.error("Error fetching app data:", error.message);
+      return false; // Or any default value to indicate the data does not exist
+    });
+  if (!exists) {
+    await orderbook.uploadAppData(appData.hash, appData.data);
+  }
+  return appData.hash;
 }

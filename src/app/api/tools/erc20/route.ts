@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { Address, encodeFunctionData, erc20Abi } from "viem";
 import { signRequestFor } from "../util";
 import { readContract } from "viem/actions";
-import { Network } from "near-ca";
 import { parseUnits } from "viem/utils";
 import {
   addressField,
@@ -11,6 +10,7 @@ import {
   numberField,
   validateInput,
 } from "../validate";
+import { getClient } from "near-safe";
 
 // Declare Route Input
 interface Input {
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       search,
       parsers,
     );
-    const decimals = await readContract(Network.fromChainId(chainId).client, {
+    const decimals = await readContract(getClient(chainId), {
       address: token,
       functionName: "decimals",
       abi: erc20Abi,

@@ -1,22 +1,13 @@
 import { NextResponse } from "next/server";
-import { DEPLOYMENT_URL } from "vercel-url";
 
 const key = JSON.parse(process.env.BITTE_KEY || "{}");
-
+const bitteConfig = JSON.parse(process.env.BITTE_CONFIG || "{}");
 if (!key?.accountId) {
   console.error("no account");
 }
-
-let bitteDevJson: { url?: string } = { url: undefined };
-
-(async () => {
-  try {
-    // This file will exist on startup.
-    bitteDevJson = await import("@/bitte.dev.json");
-  } catch {
-    console.warn("Failed to import bitte.dev.json, using default values");
-  }
-})();
+if (!bitteConfig?.url) {
+  console.error("no tunnel url");
+}
 
 export async function GET() {
   const pluginData = {
@@ -28,7 +19,7 @@ export async function GET() {
     },
     servers: [
       {
-        url: bitteDevJson.url || DEPLOYMENT_URL,
+        url: bitteConfig.url,
       },
     ],
     "x-mb": {
@@ -37,7 +28,8 @@ export async function GET() {
         name: "EVM Assistant",
         description: "An assistant that answers with EVM information",
         instructions:
-          "Encodes transactions and signature requests on EVM networks.",
+          "Encodes transactions and signature requests on EVM networks. This assistant is only for EVM networks. Passes the the transaction fields of the response to generate-evm-tx tool for signing and displays the meta content of the response to the user after signing.",
+        tools: [{ type: "generate-evm-tx" }],
       },
     },
     paths: {
@@ -87,7 +79,7 @@ export async function GET() {
       "/api/tools/cowswap": {
         post: {
           tags: ["cowswap"],
-          operationId: "cow-swap",
+          operationId: "swap",
           summary:
             "Quote a price and fee for the specified order parameters. Posts unsigned order to CoW and returns Signable payload",
           description:
@@ -133,15 +125,6 @@ export async function GET() {
             },
             {
               in: "query",
-              name: "from",
-              required: true,
-              schema: {
-                type: "string",
-              },
-              description: "The address from which the order is sent.",
-            },
-            {
-              in: "query",
               name: "sellAmountBeforeFee",
               required: true,
               schema: {
@@ -163,7 +146,7 @@ export async function GET() {
             },
           },
           responses: {
-            "200": { $ref: "#/components/responses/MetaTransaction200" },
+            "200": { $ref: "#/components/responses/SignRequestResponse200" },
             "400": {
               description: "Error quoting order.",
               content: {
@@ -300,6 +283,32 @@ export async function GET() {
             "application/json": {
               schema: {
                 $ref: "#/components/schemas/SignRequest",
+              },
+            },
+          },
+        },
+        SignRequestResponse200: {
+          description:
+            "Cowswap order response including transaction and order URL",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  transaction: {
+                    $ref: "#/components/schemas/SignRequest",
+                  },
+                  meta: {
+                    type: "object",
+                    description:
+                      "Additional metadata related to the transaction",
+                    additionalProperties: true,
+                    example: {
+                      orderUrl: "https://explorer.cow.fi/orders/0x123...",
+                    },
+                  },
+                },
+                required: ["transaction"],
               },
             },
           },
